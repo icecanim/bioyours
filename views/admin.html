@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Yönetim — bio.yours</title>
+  <link rel="icon" href="/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/"><img src="/img/logo.png" width="26" height="26" alt=""><span>bio.yours</span></a>
+  <span class="pill-tag">Yönetim</span>
+  <div class="sp"></div>
+  <span class="muted small">Yetkin: <b id="meRole"></b></span>
+  <a class="btn btn-ghost btn-sm" href="/dashboard">Panel</a>
+</header>
+
+<main class="adm">
+  <div class="adm-head">
+    <div>
+      <h2>Kullanıcılar</h2>
+      <p class="muted small"><span id="total">0</span> kayıtlı hesap · en yeni 100 gösterilir</p>
+    </div>
+    <input id="q" class="search" placeholder="Ara: kullanıcı adı, isim, e-posta, ID" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="card tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Hesap</th>
+          <th>Kullanıcı adı</th>
+          <th>Yetki</th>
+          <th>Rozetler</th>
+          <th>Premium</th>
+          <th>Ban</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+<script src="/js/admin.js"></script>
+</body>
+</html>

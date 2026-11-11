@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>bio.yours — Tüm bağlantıların, tek sayfada</title>
+  <meta name="description" content="bio.yours ile sosyal medya bağlantılarını, projelerini ve kimliğini tek bir şık sayfada topla. Google veya Discord ile saniyeler içinde başla.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="bio.yours">
+  <meta property="og:title" content="bio.yours — Tüm bağlantıların, tek sayfada">
+  <meta property="og:description" content="Tüm bağlantıların, tek sayfada.">
+  <meta name="theme-color" content="#7fd6ff">
+  <link rel="icon" href="/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<header class="nav container">
+  <a href="/" class="brand"><img src="/img/logo.png" width="30" height="30" alt=""><span>bio.yours</span></a>
+  <nav class="nav-links">
+    <a href="#features">Özellikler</a>
+    <a href="#premium">Premium</a>
+    <a href="https://discord.gg/6rumyru5r3" target="_blank" rel="noopener">Discord</a>
+  </nav>
+  <div id="navAuth"><button class="btn btn-ghost btn-sm" data-open-login>Giriş yap</button></div>
+</header>
+
+<main>
+  <section class="hero container">
+    <div class="fade-up">
+      <span class="pill">Yeni nesil bio sayfası</span>
+      <h1>Tüm bağlantıların,<br><span class="grad">tek sayfada.</span></h1>
+      <p class="lead">Sosyal medyan, projelerin ve kimliğin için akıcı, şık ve hızlı bir profil. Google veya Discord ile saniyeler içinde başla.</p>
+
+      <form id="claimForm" class="claim" autocomplete="off">
+        <span class="claim-prefix">bio.yours/</span>
+        <input id="claimInput" name="u" placeholder="kullaniciadin" maxlength="20" spellcheck="false" aria-label="Kullanıcı adı">
+        <button class="btn btn-primary" type="submit">Başla</button>
+      </form>
+      <p class="muted small">Ücretsiz başla. Premium özellikler için Discord'a gel.</p>
+    </div>
+
+    <div class="fade-up" style="animation-delay:.15s" aria-hidden="true">
+      <div class="mock">
+        <div class="mock-avatar">B</div>
+        <div style="font-weight:800;font-size:18px">Bio Yours</div>
+        <div class="muted small" style="margin-bottom:10px">@ornek</div>
+        <div class="mock-link"><span>▶</span>&nbsp; YouTube kanalım</div>
+        <div class="mock-link"><span>♪</span>&nbsp; Son yayınım</div>
+        <div class="mock-link"><span>✉</span>&nbsp; Bana yaz</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="container features">
+    <h2 class="section-title">Her şey tek bir yerde</h2>
+    <div class="grid3">
+      <article class="card feat">
+        <div class="ic">⌁</div>
+        <h3>Tek link, sınırsız kimlik</h3>
+        <p>Bağlantılarını sırala, aç-kapat ve anında yayınla. Platformları otomatik tanır.</p>
+      </article>
+      <article class="card feat">
+        <div class="ic">◐</div>
+        <h3>Tam görünüm kontrolü</h3>
+        <p>Renk, arka plan, bulanıklık ve kutu opaklığıyla profilini tamamen kendine göre ayarla.</p>
+      </article>
+      <article class="card feat">
+        <div class="ic">✦</div>
+        <h3>Akıcı animasyonlar</h3>
+        <p>Her geçiş ve hover efekti yumuşak ve hafif. Hareket azaltma tercihine de saygı duyar.</p>
+      </article>
+      <article class="card feat">
+        <div class="ic">◆</div>
+        <h3>Rozetler</h3>
+        <p>Doğrulanmış, Erken Kullanıcı ve ekip rozetleriyle profilin öne çıksın.</p>
+      </article>
+      <article class="card feat">
+        <div class="ic">⟐</div>
+        <h3>Şifresiz giriş</h3>
+        <p>Google veya Discord hesabınla tek tıkla gir. Şifre hatırlamana gerek yok.</p>
+      </article>
+      <article class="card feat">
+        <div class="ic">♛</div>
+        <h3>Paylaşımda güzel görünür</h3>
+        <p>Profil linkini Discord veya X'te paylaştığında avatarın ve açıklaman otomatik önizlemede çıkar.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="premium" class="container card cta">
+    <div>
+      <h2>Premium ve satın alımlar</h2>
+      <p class="muted">Premium paketleri, rozetleri ve özel tanıtımları Discord sunucumuzdan alabilirsin.</p>
+    </div>
+    <a class="btn btn-primary" href="https://discord.gg/6rumyru5r3" target="_blank" rel="noopener">Discord'a katıl</a>
+  </section>
+</main>
+
+<footer class="container foot-site">
+  <span>© 2026 bio.yours</span>
+  <a href="https://discord.gg/6rumyru5r3" target="_blank" rel="noopener">Discord</a>
+</footer>
+
+<div class="modal" id="loginModal" hidden>
+  <div class="modal-card card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <button class="x" data-close aria-label="Kapat">✕</button>
+    <h3 id="loginTitle">Hesabına giriş yap</h3>
+    <p class="muted small">Şifre yok. Tek tıkla devam et.</p>
+    <a class="btn btn-google" href="/auth/google">Google ile devam et</a>
+    <a class="btn btn-discord" href="/auth/discord">Discord ile devam et</a>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const modal = $('#loginModal');
+  const toast = $('#toast');
+  let loggedIn = false;
+
+  const open = () => (modal.hidden = false);
+  const close = () => (modal.hidden = true);
+
+  document.querySelectorAll('[data-open-login]').forEach((b) => (b.onclick = open));
+  modal.querySelector('[data-close]').onclick = close;
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+  $('#claimForm').onsubmit = (e) => {
+    e.preventDefault();
+    if (loggedIn) location.href = '/dashboard';
+    else open();
+  };
+
+  fetch('/api/me').then((r) => r.json()).then(({ user }) => {
+    if (!user) return;
+    loggedIn = true;
+    $('#navAuth').innerHTML = '<a class="btn btn-primary btn-sm" href="/dashboard">Panelime git</a>';
+  }).catch(() => {});
+
+  const params = new URLSearchParams(location.search);
+  const MSG = {
+    denied: 'Giriş iptal edildi.',
+    state: 'Oturum doğrulanamadı, tekrar dene.',
+    banned: 'Bu hesap kapatılmış.',
+    login: 'Giriş yapılamadı, tekrar dene.',
+  };
+  if (params.get('login')) open();
+  const err = params.get('error');
+  if (err && MSG[err]) {
+    toast.textContent = MSG[err];
+    toast.className = 'toast bad';
+    toast.hidden = false;
+    setTimeout(() => (toast.hidden = true), 3800);
+  }
+  if (err || params.get('login')) history.replaceState(null, '', '/');
+})();
+</script>
+</body>
+</html>

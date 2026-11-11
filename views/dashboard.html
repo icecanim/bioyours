@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Panel — bio.yours</title>
+  <link rel="icon" href="/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/"><img src="/img/logo.png" width="26" height="26" alt=""><span>bio.yours</span></a>
+  <span id="who" class="muted small"></span>
+  <span id="topBadges" class="badges"></span>
+  <div class="sp"></div>
+  <a id="viewLink" class="btn btn-ghost btn-sm" target="_blank" rel="noopener" href="/">Profilimi gör ↗</a>
+  <button id="logout" class="btn btn-ghost btn-sm">Çıkış</button>
+</header>
+
+<main class="dash">
+  <section class="card editor">
+    <div class="tabs" role="tablist">
+      <button class="on" data-tab="profile">Profil</button>
+      <button data-tab="links">Linkler</button>
+      <button data-tab="look">Görünüm</button>
+    </div>
+
+    <div class="pane on" data-pane="profile">
+      <div class="field">
+        <label for="displayName">Görünen ad</label>
+        <input id="displayName" data-k="displayName" maxlength="32" placeholder="Adın veya markan">
+      </div>
+      <div class="field">
+        <label for="description">Açıklama <span id="descCount" class="muted"></span></label>
+        <textarea id="description" data-k="description" maxlength="190" placeholder="Kendini birkaç cümleyle anlat"></textarea>
+      </div>
+      <div class="field">
+        <label for="avatar">Profil avatarı (URL)</label>
+        <input id="avatar" data-k="avatar" placeholder="https://..." inputmode="url">
+      </div>
+    </div>
+
+    <div class="pane" data-pane="links">
+      <div id="premiumLock" class="lock" hidden>
+        <span>Premium ile 50 bağlantıya ve video arka plana eriş.</span>
+        <a class="btn btn-primary btn-sm" href="https://discord.gg/6rumyru5r3" target="_blank" rel="noopener">Discord'dan al</a>
+      </div>
+      <div class="field-head">
+        <span class="small muted">Bağlantılar <b id="linkCount"></b></span>
+        <button id="addLink" class="btn btn-sm">+ Bağlantı ekle</button>
+      </div>
+      <div id="linkList" class="links-edit"></div>
+    </div>
+
+    <div class="pane" data-pane="look">
+      <div class="row2">
+        <div class="field">
+          <label for="bgType">Arka plan türü</label>
+          <select id="bgType" data-k="background.type">
+            <option value="color">Renk</option>
+            <option value="image">Görsel veya GIF</option>
+            <option value="video">Video (Premium)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="bgColor">Arka plan rengi</label>
+          <input id="bgColor" type="color" data-k="background.color">
+        </div>
+      </div>
+      <div class="field" id="bgUrlField">
+        <label for="bgUrl">Arka plan URL</label>
+        <input id="bgUrl" data-k="background.url" placeholder="https://..." inputmode="url">
+      </div>
+      <div class="row2">
+        <div class="field"><label>Vurgu rengi</label><input type="color" data-k="colors.accent"></div>
+        <div class="field"><label>Metin rengi</label><input type="color" data-k="colors.text"></div>
+        <div class="field"><label>Kutu rengi</label><input type="color" data-k="colors.card"></div>
+      </div>
+      <div class="field">
+        <label for="blur">Bulanıklık <b id="blurVal"></b></label>
+        <input id="blur" type="range" min="0" max="40" step="1" data-k="effects.blur">
+      </div>
+      <div class="field">
+        <label for="opacity">Kutu opaklığı <b id="opVal"></b></label>
+        <input id="opacity" type="range" min="0.2" max="1" step="0.05" data-k="effects.opacity">
+      </div>
+    </div>
+
+    <div class="savebar">
+      <span class="small muted">Değişiklikleri kaydetmeyi unutma</span>
+      <button id="save" class="btn btn-primary">Kaydet</button>
+    </div>
+  </section>
+
+  <aside class="preview"><div id="preview" class="phone"></div></aside>
+</main>
+
+<div class="modal" id="claim" hidden>
+  <form class="modal-card card" id="claimForm" autocomplete="off">
+    <h3>Kullanıcı adını seç</h3>
+    <p class="muted small">Profilin <b>bio.yours/kullanici</b> adresinde yayınlanacak. Bu ad sonradan değiştirilemez.</p>
+    <div class="claim" style="margin:14px 0 0">
+      <span class="claim-prefix">bio.yours/</span>
+      <input id="claimName" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_.]{3,20}" spellcheck="false" aria-label="Kullanıcı adı">
+    </div>
+    <p id="claimErr" class="err"></p>
+    <button class="btn btn-primary btn-block" type="submit">Devam et</button>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="/js/render.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>
