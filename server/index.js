@@ -60,10 +60,26 @@ function profileHead(data) {
   ].filter(Boolean).join('\n');
 }
 
+// Veritabanı yüklemesi bitene kadar gelen istekler bekler.
+// Vercel'de her soğuk başlatmada bu bir kez çalışır.
+const ready = db.init();
+// Hata middleware'de yakalanıp 503 döner. Burada işlenmeyen promise olarak süreci düşürmesin.
+ready.catch(() => {});
+
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '100kb' }));
+
+app.use(async (req, res, next) => {
+  try {
+    await ready;
+    next();
+  } catch (err) {
+    console.error('[db]', err.message);
+    res.status(503).type('text/plain; charset=utf-8').send('Veritabanı bağlantısı kurulamadı. Birazdan tekrar dene.');
+  }
+});
 
 app.use((req, res, next) => {
   res.set({
@@ -118,11 +134,15 @@ app.use((err, req, res, next) => {
   res.status(500).type('html').send('<h1>Bir hata oluştu</h1>');
 });
 
-db.init()
-  .then(() => {
-    app.listen(PORT, () => console.log(`bio.yours çalışıyor → ${BASE}`));
-  })
-  .catch((err) => {
-    console.error('Başlatılamadı:', err.message);
-    process.exit(1);
-  });
+// Yerelde: node server/index.js ile doğrudan çalıştırılınca port dinler.
+// Vercel'de: api/index.js bu uygulamayı import eder, port dinlenmez.
+if (require.main === module) {
+  ready
+    .then(() => app.listen(PORT, () => console.log(`bio.yours çalışıyor → ${BASE}`)))
+    .catch((err) => {
+      console.error('Başlatılamadı:', err.message);
+      process.exit(1);
+    });
+}
+
+module.exports = app;
