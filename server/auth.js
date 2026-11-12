@@ -60,7 +60,13 @@ function setCookie(res, name, value, maxAge) {
 function loadUser(req, res, next) {
   const session = unseal(parseCookies(req).bio_session);
   const user = session ? db.read().users[session.uid] : null;
-  req.user = user && !user.banned ? user : null;
+  if (!user || user.banned) {
+    req.user = null;
+    return next();
+  }
+  // OWNER_IDS her istekte kontrol edilir. Böylece giriş yapıldıktan sonra
+  // eklenen ID de çıkış-giriş gerektirmeden hemen geçerli olur.
+  req.user = OWNER_IDS.includes(user.id) ? { ...user, role: 'owner' } : user;
   next();
 }
 
