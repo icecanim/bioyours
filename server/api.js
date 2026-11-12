@@ -7,6 +7,9 @@ const { sanitizeProfile, publicProfile, validUsername, USERNAME_RE } = require('
 
 const router = express.Router();
 
+// Tanı amaçlı: değerin kendisi değil, yalnızca sayısı ve eşleşme bilgisi döner.
+const OWNER_IDS = (process.env.OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -57,6 +60,11 @@ router.get('/me', (req, res) => {
     user: req.user ? selfView(req.user) : null,
     badges: BADGES,
     manualBadges: MANUAL_BADGES,
+    debug: {
+      build: 'v3-diag',
+      ownerEnvCount: OWNER_IDS.length,
+      youAreListed: req.user ? OWNER_IDS.includes(req.user.id) : null,
+    },
   });
 });
 
