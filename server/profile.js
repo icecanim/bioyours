@@ -57,7 +57,7 @@ function defaultProfile() {
     displayName: '',
     description: '',
     avatar: '',
-    background: { type: 'color', color: '#05070a', url: '' },
+    background: { type: 'color', color: '#05070a', color2: '#1b4a63', angle: 135, url: '' },
     colors: { accent: '#7fd6ff', text: '#f2f7fa', card: '#0f161d' },
     effects: { blur: 12, opacity: 0.85 },
     links: [],
@@ -90,7 +90,7 @@ function sanitizeProfile(input, user) {
   const fx = p.effects && typeof p.effects === 'object' ? p.effects : {};
   const linkLimit = premium ? 50 : 10;
 
-  let bgType = ['color', 'image', 'video'].includes(bg.type) ? bg.type : 'color';
+  let bgType = ['color', 'gradient', 'image', 'video'].includes(bg.type) ? bg.type : 'color';
   if (bgType === 'video' && !premium) bgType = 'color';
 
   const links = (Array.isArray(p.links) ? p.links : [])
@@ -116,7 +116,9 @@ function sanitizeProfile(input, user) {
     background: {
       type: bgType,
       color: hex(bg.color, '#05070a'),
-      url: bgType === 'color' ? '' : safeUrl(bg.url, ['https:']),
+      color2: hex(bg.color2, '#1b4a63'),
+      angle: num(bg.angle, 0, 360, 135),
+      url: bgType === 'image' || bgType === 'video' ? safeUrl(bg.url, ['https:']) : '',
     },
     colors: {
       accent: hex(colors.accent, '#7fd6ff'),

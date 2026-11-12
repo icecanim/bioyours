@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>bio.yours/<!--NAME--> — bu isim boş</title>
+  <meta name="description" content="bio.yours/<!--NAME--> henüz alınmamış. Hemen kap.">
+  <link rel="icon" href="/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<main class="avail">
+  <img src="/img/logo.png" width="44" height="44" alt="" class="avail-logo">
+  <p class="eyebrow">bio.yours/</p>
+  <h1 class="avail-name"><!--NAME--></h1>
+  <p class="lead-sm">Bu isim henüz alınmamış. Hemen kap ve profilini bu adreste yayınla.</p>
+
+  <div id="action" class="avail-actions"><span class="muted small">Kontrol ediliyor…</span></div>
+  <p id="err" class="err"></p>
+
+  <a class="small muted back" href="/">bio.yours nedir?</a>
+</main>
+
+<div class="modal" id="loginModal" hidden>
+  <div class="modal-card card" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <button class="x" data-close aria-label="Kapat">✕</button>
+    <h3 id="loginTitle">Bu ismi kapmak için giriş yap</h3>
+    <p class="muted small">Şifre yok. Tek tıkla devam et, <b><!--NAME--></b> senin olsun.</p>
+    <a class="btn btn-google btn-block" href="/auth/google" data-login>Google ile devam et</a>
+    <a class="btn btn-discord btn-block" href="/auth/discord" data-login>Discord ile devam et</a>
+  </div>
+</div>
+
+<script>
+(() => {
+  const NAME = '<!--NAME-->';
+  const action = document.getElementById('action');
+  const err = document.getElementById('err');
+  const modal = document.getElementById('loginModal');
+
+  const openLogin = () => {
+    // Giriş sonrası panel bu ismi otomatik önerecek
+    sessionStorage.setItem('bio_want', NAME);
+    modal.hidden = false;
+  };
+  modal.querySelector('[data-close]').onclick = () => (modal.hidden = true);
+  modal.onclick = (e) => { if (e.target === modal) modal.hidden = true; };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') modal.hidden = true; });
+
+  async function init() {
+    const { user } = await fetch('/api/me', { credentials: 'same-origin' }).then((r) => r.json());
+
+    if (!user) {
+      action.innerHTML = '<button class="btn btn-primary btn-lg" id="cta">Bu ismi kap</button>';
+      document.getElementById('cta').onclick = openLogin;
+      return;
+    }
+
+    if (user.username) {
+      action.innerHTML = `<p class="muted">Zaten bir profilin var: <a class="link" href="/${user.username}">bio.yours/${user.username}</a></p>`;
+      return;
+    }
+
+    action.innerHTML = '<button class="btn btn-primary btn-lg" id="cta">Bu ismi kap</button>';
+    document.getElementById('cta').onclick = async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      err.textContent = '';
+      const res = await fetch('/api/username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username: NAME }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        err.textContent = data.error || 'Bu isim alınamadı';
+        btn.disabled = false;
+        return;
+      }
+      location.href = '/dashboard';
+    };
+  }
+
+  init().catch(() => { action.textContent = 'Bir hata oluştu, sayfayı yenile.'; });
+})();
+</script>
+</body>
+</html>

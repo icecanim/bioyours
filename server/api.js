@@ -1,6 +1,7 @@
 // JSON API. Tüm yetki kontrolleri burada, sunucu tarafında yapılır.
 const express = require('express');
 const db = require('./db');
+const { put } = require('@vercel/blob');
 const { BADGES, MANUAL_BADGES, roleRank, effectiveBadges } = require('./roles');
 const { sanitizeProfile, publicProfile, validUsername, USERNAME_RE } = require('./profile');
 
@@ -140,5 +141,59 @@ const toggleField = (field) => wrap(async (req, res) => {
 
 router.post('/admin/users/:id/premium', requireUser, requireRank(80), loadTarget, toggleField('premium'));
 router.post('/admin/users/:id/ban', requireUser, requireRank(80), loadTarget, toggleField('banned'));
+
+// ---------- dosya yükleme (avatar, arka plan görseli, premium video) ----------
+const IMAGE_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' };
+const VIDEO_TYPES = { 'video/mp4': 'mp4', 'video/webm': 'webm' };
+const MB = 1024 * 1024;
+const LIMITS = { avatar: 2 * MB, image: 6 * MB, video: 15 * MB };
+
+router.post(
+  '/upload',
+  requireUser,
+  requireClaimed,
+  express.raw({ type: [...Object.keys(IMAGE_TYPES), ...Object.keys(VIDEO_TYPES)], limit: '15mb' }),
+  wrap(async (req, res) => {
+    const kind = String(req.query.kind || '');
+    const type = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+    const body = req.body;
+
+    if (!Buffer.isBuffer(body) || !body.length) return res.status(400).json({ error: 'Dosya boş' });
+
+    let limit;
+    if (kind === 'avatar') {
+      if (!IMAGE_TYPES[type]) return res.status(400).json({ error: 'Avatar için PNG, JPG, WEBP veya GIF yükle' });
+      limit = LIMITS.avatar;
+    } else if (kind === 'background') {
+      if (IMAGE_TYPES[type]) {
+        limit = LIMITS.image;
+      } else if (VIDEO_TYPES[type]) {
+        if (!req.user.premium) return res.status(403).json({ error: 'Video arka plan Premium ile açılır' });
+        limit = LIMITS.video;
+      } else {
+        return res.status(400).json({ error: 'Desteklenmeyen dosya türü' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Geçersiz yükleme türü' });
+    }
+
+    if (body.length > limit) {
+      return res.status(413).json({ error: `Dosya çok büyük (en fazla ${Math.round(limit / MB)} MB)` });
+    }
+
+    const ext = IMAGE_TYPES[type] || VIDEO_TYPES[type];
+    try {
+      const blob = await put(`${kind}/${req.user.username}.${ext}`, body, {
+        access: 'public',
+        contentType: type,
+        addRandomSuffix: true,
+      });
+      res.json({ url: blob.url });
+    } catch (err) {
+      console.error('[upload]', err.message);
+      res.status(503).json({ error: 'Yükleme şu an yapılamıyor. Vercel Blob bağlı mı kontrol et.' });
+    }
+  })
+);
 
 module.exports = router;

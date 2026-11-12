@@ -15,9 +15,10 @@
 
 <header class="topbar">
   <a class="brand" href="/"><img src="/img/logo.png" width="26" height="26" alt=""><span>bio.yours</span></a>
-  <span id="who" class="muted small"></span>
+  <span id="who" class="handle-pill" hidden></span>
   <span id="topBadges" class="badges"></span>
   <div class="sp"></div>
+  <span id="dirty" class="dirty" hidden>Kaydedilmemiş değişiklik</span>
   <a id="viewLink" class="btn btn-ghost btn-sm" target="_blank" rel="noopener" href="/">Profilimi gör ↗</a>
   <button id="logout" class="btn btn-ghost btn-sm">Çıkış</button>
 </header>
@@ -26,11 +27,28 @@
   <section class="card editor">
     <div class="tabs" role="tablist">
       <button class="on" data-tab="profile">Profil</button>
-      <button data-tab="links">Linkler</button>
-      <button data-tab="look">Görünüm</button>
+      <button data-tab="links">Bağlantılar</button>
+      <button data-tab="bg">Arka plan</button>
+      <button data-tab="style">Stil</button>
     </div>
 
+    <!-- PROFİL -->
     <div class="pane on" data-pane="profile">
+      <div class="avatar-edit">
+        <div class="avatar-big" id="avatarBox">
+          <img id="avatarImg" alt="" hidden>
+          <span id="avatarInit">?</span>
+        </div>
+        <div class="avatar-actions">
+          <div class="row-btns">
+            <label class="btn btn-sm btn-primary" for="avatarFile">Fotoğraf yükle</label>
+            <button id="avatarReset" class="btn btn-sm btn-ghost">Varsayılana dön</button>
+          </div>
+          <input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+          <p class="small muted">PNG, JPG, WEBP veya GIF · en fazla 2 MB</p>
+        </div>
+      </div>
+
       <div class="field">
         <label for="displayName">Görünen ad</label>
         <input id="displayName" data-k="displayName" maxlength="32" placeholder="Adın veya markan">
@@ -39,15 +57,12 @@
         <label for="description">Açıklama <span id="descCount" class="muted"></span></label>
         <textarea id="description" data-k="description" maxlength="190" placeholder="Kendini birkaç cümleyle anlat"></textarea>
       </div>
-      <div class="field">
-        <label for="avatar">Profil avatarı (URL)</label>
-        <input id="avatar" data-k="avatar" placeholder="https://..." inputmode="url">
-      </div>
     </div>
 
+    <!-- BAĞLANTILAR -->
     <div class="pane" data-pane="links">
       <div id="premiumLock" class="lock" hidden>
-        <span>Premium ile 50 bağlantıya ve video arka plana eriş.</span>
+        <span>Premium ile 50 bağlantıya kadar çıkabilirsin.</span>
         <a class="btn btn-primary btn-sm" href="https://discord.gg/6rumyru5r3" target="_blank" rel="noopener">Discord'dan al</a>
       </div>
       <div class="field-head">
@@ -57,29 +72,97 @@
       <div id="linkList" class="links-edit"></div>
     </div>
 
-    <div class="pane" data-pane="look">
-      <div class="row2">
-        <div class="field">
-          <label for="bgType">Arka plan türü</label>
-          <select id="bgType" data-k="background.type">
-            <option value="color">Renk</option>
-            <option value="image">Görsel veya GIF</option>
-            <option value="video">Video (Premium)</option>
-          </select>
-        </div>
+    <!-- ARKA PLAN -->
+    <div class="pane" data-pane="bg">
+      <div class="tiles" role="radiogroup" aria-label="Arka plan türü">
+        <button class="tile" data-bgtype="color">
+          <span class="tile-prev" style="background:#05070a"></span><b>Renk</b>
+        </button>
+        <button class="tile" data-bgtype="gradient">
+          <span class="tile-prev" style="background:linear-gradient(135deg,#7fd6ff,#1b4a63)"></span><b>Gradyan</b>
+        </button>
+        <button class="tile" data-bgtype="image">
+          <span class="tile-prev tp-img"></span><b>Görsel / GIF</b>
+        </button>
+        <button class="tile" data-bgtype="video">
+          <span class="tile-prev tp-vid"></span><b>Video</b><span class="pro">PRO</span>
+        </button>
+      </div>
+
+      <div class="bgpane" data-bgpane="color">
         <div class="field">
           <label for="bgColor">Arka plan rengi</label>
           <input id="bgColor" type="color" data-k="background.color">
         </div>
       </div>
-      <div class="field" id="bgUrlField">
-        <label for="bgUrl">Arka plan URL</label>
-        <input id="bgUrl" data-k="background.url" placeholder="https://..." inputmode="url">
+
+      <div class="bgpane" data-bgpane="gradient">
+        <div class="field">
+          <label>Hazır gradyanlar</label>
+          <div class="presets">
+            <button class="preset" data-preset="#7fd6ff,#1b4a63" style="--c1:#7fd6ff;--c2:#1b4a63" title="Çelik"></button>
+            <button class="preset" data-preset="#ff8a5b,#5b1a2e" style="--c1:#ff8a5b;--c2:#5b1a2e" title="Kor"></button>
+            <button class="preset" data-preset="#b48cff,#2a1656" style="--c1:#b48cff;--c2:#2a1656" title="Mor"></button>
+            <button class="preset" data-preset="#7ee7c1,#0f3b3a" style="--c1:#7ee7c1;--c2:#0f3b3a" title="Nane"></button>
+            <button class="preset" data-preset="#2b3a55,#05070a" style="--c1:#2b3a55;--c2:#05070a" title="Gece"></button>
+            <button class="preset" data-preset="#ff8fc7,#2a0f22" style="--c1:#ff8fc7;--c2:#2a0f22" title="Gül"></button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Başlangıç rengi</label><input type="color" data-k="background.color"></div>
+          <div class="field"><label>Bitiş rengi</label><input type="color" data-k="background.color2"></div>
+        </div>
+        <div class="field">
+          <label for="angle">Yön <b id="angleVal"></b></label>
+          <input id="angle" type="range" min="0" max="360" step="1" data-k="background.angle">
+        </div>
       </div>
-      <div class="row2">
-        <div class="field"><label>Vurgu rengi</label><input type="color" data-k="colors.accent"></div>
-        <div class="field"><label>Metin rengi</label><input type="color" data-k="colors.text"></div>
-        <div class="field"><label>Kutu rengi</label><input type="color" data-k="colors.card"></div>
+
+      <div class="bgpane" data-bgpane="image">
+        <label class="drop" for="bgFile">
+          <span class="drop-title">Görsel veya GIF seç</span>
+          <span class="small muted">PNG, JPG, WEBP veya GIF · en fazla 6 MB</span>
+        </label>
+        <input id="bgFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+        <div class="bg-current" id="imgCurrent" hidden>
+          <img id="imgPrev" alt="">
+          <span class="small muted">Arka plan görseli yüklü</span>
+          <button id="imgRemove" class="btn btn-sm btn-ghost">Kaldır</button>
+        </div>
+      </div>
+
+      <div class="bgpane" data-bgpane="video">
+        <div id="videoLock" class="lock" hidden>
+          <span>Video arka plan Premium özelliktir.</span>
+          <a class="btn btn-primary btn-sm" href="https://discord.gg/6rumyru5r3" target="_blank" rel="noopener">Discord'dan al</a>
+        </div>
+        <label class="drop" id="vidDrop" for="vidFile">
+          <span class="drop-title">Video seç</span>
+          <span class="small muted">MP4 veya WEBM · en fazla 15 MB · kısa ve döngülü olursa daha iyi</span>
+        </label>
+        <input id="vidFile" type="file" accept="video/mp4,video/webm" hidden>
+        <div class="bg-current" id="vidCurrent" hidden>
+          <span class="small muted">Video arka plan yüklü</span>
+          <button id="vidRemove" class="btn btn-sm btn-ghost">Kaldır</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STİL -->
+    <div class="pane" data-pane="style">
+      <div class="field">
+        <label>Hazır temalar</label>
+        <div class="themes">
+          <button class="theme" data-theme="steel" style="--c1:#7fd6ff;--c2:#1b4a63">Çelik</button>
+          <button class="theme" data-theme="ember" style="--c1:#ff8a5b;--c2:#5b1a2e">Kor</button>
+          <button class="theme" data-theme="violet" style="--c1:#b48cff;--c2:#2a1656">Mor</button>
+          <button class="theme" data-theme="mint" style="--c1:#7ee7c1;--c2:#0f3b3a">Nane</button>
+        </div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>Vurgu</label><input type="color" data-k="colors.accent"></div>
+        <div class="field"><label>Yazı</label><input type="color" data-k="colors.text"></div>
+        <div class="field"><label>Kutu</label><input type="color" data-k="colors.card"></div>
       </div>
       <div class="field">
         <label for="blur">Bulanıklık <b id="blurVal"></b></label>
@@ -92,19 +175,22 @@
     </div>
 
     <div class="savebar">
-      <span class="small muted">Değişiklikleri kaydetmeyi unutma</span>
+      <span class="small muted">Adresin: <b id="liveUrl"></b></span>
       <button id="save" class="btn btn-primary">Kaydet</button>
     </div>
   </section>
 
-  <aside class="preview"><div id="preview" class="phone"></div></aside>
+  <aside class="preview">
+    <span class="preview-label">Canlı önizleme</span>
+    <div id="preview" class="phone"></div>
+  </aside>
 </main>
 
 <div class="modal" id="claim" hidden>
   <form class="modal-card card" id="claimForm" autocomplete="off">
     <h3>Kullanıcı adını seç</h3>
     <p class="muted small">Profilin <b>bio.yours/kullanici</b> adresinde yayınlanacak. Bu ad sonradan değiştirilemez.</p>
-    <div class="claim" style="margin:14px 0 0">
+    <div class="claim" style="margin:16px 0 0">
       <span class="claim-prefix">bio.yours/</span>
       <input id="claimName" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_.]{3,20}" spellcheck="false" aria-label="Kullanıcı adı">
     </div>

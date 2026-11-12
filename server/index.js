@@ -116,8 +116,13 @@ app.get('/:username', (req, res, next) => {
   const name = req.params.username.toLowerCase();
   if (!USERNAME_RE.test(name) || RESERVED.has(name)) return next();
   const s = db.read();
-  const user = s.users[s.usernames[name]];
-  if (!user || user.banned) return res.status(404).type('html').send(NOT_FOUND);
+  const ownerId = s.usernames[name];
+  const user = ownerId ? s.users[ownerId] : null;
+  if (!user) {
+    // Kimse almamış: "bu isim boş, kap" sayfası
+    return res.type('html').send(view('available.html').replace(/<!--NAME-->/g, () => esc(name)));
+  }
+  if (user.banned) return res.status(404).type('html').send(NOT_FOUND);
   const data = publicProfile(user);
   res.type('html').send(view('profile.html').replace('<!--META-->', () => profileHead(data)));
 });
