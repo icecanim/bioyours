@@ -11,6 +11,13 @@ const { sanitizeProfile, publicProfile, validUsername, USERNAME_RE } = require('
 const router = express.Router();
 const OWNER_DIAG = parseOwnerIds(process.env.OWNER_IDS);
 
+// Blob token'ı: standart ad yoksa, "..._READ_WRITE_TOKEN" ile biten herhangi bir değişken
+function blobToken() {
+  if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN;
+  const hit = Object.keys(process.env).find((k) => k.endsWith('_READ_WRITE_TOKEN'));
+  return hit ? process.env[hit] : undefined;
+}
+
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -146,6 +153,7 @@ router.post('/blob/upload', requireUser, requireClaimed, express.json({ limit: '
   const premium = hasPremium(req.user);
   try {
     const result = await handleUpload({
+      token: blobToken(),
       body: req.body,
       request: req,
       onBeforeGenerateToken: async (pathname) => {
@@ -165,9 +173,18 @@ router.post('/blob/upload', requireUser, requireClaimed, express.json({ limit: '
     });
     res.json(result);
   } catch (err) {
+    console.error('[blob]', err.message);
     res.status(err.status || 400).json({ error: err.message || 'Yükleme izni verilemedi' });
   }
 }));
+
+// Tanı: token var mı ve hangi BLOB değişkenleri tanımlı. Değerleri asla göstermez.
+router.get('/blob/check', requireUser, requireRank(100), (req, res) => {
+  res.json({
+    tokenFound: Boolean(blobToken()),
+    blobEnvNames: Object.keys(process.env).filter((k) => /BLOB/i.test(k)).sort(),
+  });
+});
 
 // ---------- admin paneli ----------
 router.get('/admin/users', requireUser, requireRank(60), (req, res) => {
