@@ -142,6 +142,7 @@ const FONT_TYPES = [
 
 const UPLOAD_KINDS = {
   avatar: { types: IMG_TYPES, premium: false },
+  icon: { types: IMG_TYPES, premium: false },
   background: { types: [...IMG_TYPES, ...VID_TYPES], videoOnlyPremium: true },
   audio: { types: AUD_TYPES, premium: true },
   click: { types: AUD_TYPES, premium: true },

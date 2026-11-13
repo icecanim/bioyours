@@ -320,6 +320,7 @@ let currentUsername = '';
     const renderLinks = () => {
       $('#linkList').innerHTML = draft.links.map((l, i) => `
         <div class="link-row${l.enabled === false ? ' off' : ''}" data-i="${i}">
+          ${l.icon ? `<img class="li-thumb" src="${esc(l.icon)}" alt="">` : '<span class="li-thumb">✦</span>'}
           <div class="lr-main">
             <input type="text" data-f="title" maxlength="40" placeholder="Başlık" value="${esc(l.title)}" aria-label="Bağlantı başlığı">
             <input type="text" data-f="url" placeholder="https://..." value="${esc(l.url)}" aria-label="Bağlantı adresi">
@@ -329,6 +330,8 @@ let currentUsername = '';
             </select>
           </div>
           <div class="lr-actions">
+            <button class="chip" data-act="icon">${l.icon ? 'İkonu değiştir' : 'İkon yükle'}</button>
+            ${l.icon ? '<button class="chip" data-act="iconrm">İkonu kaldır</button>' : ''}
             <button class="chip" data-act="toggle">${l.enabled === false ? 'Gizli' : 'Açık'}</button>
             <button class="chip" data-act="up" ${i === 0 ? 'disabled' : ''} aria-label="Yukarı taşı">↑</button>
             <button class="chip" data-act="down" ${i === draft.links.length - 1 ? 'disabled' : ''} aria-label="Aşağı taşı">↓</button>
@@ -337,6 +340,7 @@ let currentUsername = '';
         </div>`).join('') || '<p class="muted small">Henüz bağlantın yok. "Bağlantı ekle" ile başla.</p>';
     };
 
+    let pendingIcon = -1;
     const linkEdit = (e) => {
       const row = e.target.closest('.link-row');
       if (!row || !e.target.dataset.f) return;
@@ -356,6 +360,11 @@ let currentUsername = '';
         case 'up': if (i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]]; break;
         case 'down': if (i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]]; break;
         case 'toggle': L[i].enabled = L[i].enabled === false; break;
+        case 'icon':
+          pendingIcon = i;
+          $('#linkIconFile').click();
+          return;
+        case 'iconrm': L[i].icon = ''; break;
       }
       renderLinks();
       touch();
@@ -367,6 +376,18 @@ let currentUsername = '';
       renderLinks();
       touch();
       $$('#linkList .link-row:last-child input[data-f=url]')[0]?.focus();
+    };
+
+    $('#linkIconFile').onchange = () => {
+      const f = $('#linkIconFile').files[0];
+      $('#linkIconFile').value = '';
+      if (!f || pendingIcon < 0) return;
+      const idx = pendingIcon;
+      pendingIcon = -1;
+      guarded(f, 'icon', (url) => {
+        draft.links[idx].icon = url;
+        renderLinks();
+      }, 'İkon yüklendi');
     };
 
     // ---- kaydet ----

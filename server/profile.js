@@ -136,6 +136,7 @@ function sanitizeProfile(input, user) {
         platform: detectPlatform(url),
         enabled: item.enabled !== false,
         display: pick(item.display, LINK_DISPLAY, 'card'),
+        icon: safeUrl(item.icon),
       };
     })
     .filter(Boolean);

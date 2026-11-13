@@ -131,6 +131,11 @@
     return `<h1 class="${cls.join(' ')}" style="${style}" data-text="${esc(name)}">${esc(name)}</h1>`;
   }
 
+  // Bağlantı ikonu: özel görsel varsa o, yoksa platformun harfi
+  const iconInner = (l, label) => (l.icon
+    ? `<img src="${esc(l.icon)}" alt="" draggable="false">`
+    : esc(label.charAt(0)));
+
   function render(el, data) {
     stopFx();
     const p = data.profile || {};
@@ -176,7 +181,7 @@
       const cls = ['lnk', p.boxColors ? 'boxed' : '', glow.socials ? 'glow-social' : ''].filter(Boolean).join(' ');
       const pfCls = ['pf', p.monochromeIcons ? 'mono' : ''].filter(Boolean).join(' ');
       return `<a class="${cls}" style="--i:${i};--pf:${col}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow">
-        <span class="${pfCls}">${esc(label.charAt(0))}</span>
+        <span class="${pfCls}">${iconInner(l, label)}</span>
         <span class="lt">${esc(l.title)}</span>
         <span class="arrow" aria-hidden="true">↗</span>
       </a>`;
@@ -186,7 +191,7 @@
       ? `<div class="icons">${icons.map((l, i) => {
           const [col, label] = PLATFORMS[l.platform] || PLATFORMS.web;
           const pfCls = ['ico', p.monochromeIcons ? 'mono' : ''].filter(Boolean).join(' ');
-          return `<a class="${pfCls}" style="--i:${i};--pf:${col}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow" title="${esc(l.title)}" aria-label="${esc(l.title)}">${esc(label.charAt(0))}</a>`;
+          return `<a class="${pfCls}" style="--i:${i};--pf:${col}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow" title="${esc(l.title)}" aria-label="${esc(l.title)}">${iconInner(l, label)}</a>`;
         }).join('')}</div>`
       : '';
 
