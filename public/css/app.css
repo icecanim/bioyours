@@ -521,3 +521,6 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
 @media (max-width: 760px) {
   .grid-form.three, .uploads.two, .defform { grid-template-columns: 1fr; }
 }
+
+/* Özel imleç: bağlantı ve düğmelerin kendi imleç stilini de geçersiz kılar */
+.stage.has-cursor, .stage.has-cursor * { cursor: var(--cursor) !important; }

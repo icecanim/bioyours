@@ -72,13 +72,14 @@
     ? `<span class="bdg" style="--bc:${esc(b.color)}" title="${esc(b.label)}">${esc(b.icon || '')} ${esc(b.label)}</span>`
     : '');
 
-  function bgMedia(bg, bgEffect) {
+  function bgMedia(bg, bgEffect, preview) {
     const blur = bgEffect === 'blur' ? ' fx-blur' : '';
     if (bg.type === 'gradient') {
       return `<div class="bg-media" style="background:linear-gradient(${num(bg.angle, 135)}deg,${hex(bg.color, '#9d6bff')},${hex(bg.color2, '#2a1d4d')})"></div>`;
     }
     if (bg.type === 'video' && bg.url) {
-      return `<video class="bg-media${blur}" src="${esc(bg.url)}" autoplay muted loop playsinline></video>`;
+      // Yayında video giriş ekranı kalkana kadar durur. Önizlemede hemen oynar.
+      return `<video class="bg-media${blur}" src="${esc(bg.url)}" ${preview ? 'autoplay' : ''} muted loop playsinline preload="metadata"></video>`;
     }
     if (bg.type === 'image' && bg.url) {
       return `<div class="bg-media${blur}" data-bg="${esc(bg.url)}"></div>`;
@@ -175,8 +176,8 @@
       : `<div class="enter" id="bioEnter"><button class="enter-btn" type="button">${esc(p.entryText || 'Click to enter')}</button></div>`;
 
     el.innerHTML = `
-      <div class="stage" style="${style}">
-        <div class="bg-layer">${bgMedia(bg, p.bgEffect)}${fxLayer(p.bgEffect)}</div>
+      <div class="stage${p.cursor ? ' has-cursor' : ''}" style="${style}">
+        <div class="bg-layer">${bgMedia(bg, p.bgEffect, data.preview)}${fxLayer(p.bgEffect)}</div>
         <div class="profile">
           <div class="avatar${p.avatarRing ? ' ring' : ''}">${avatarInner}</div>
           ${nameHtml(name, p, glow)}
@@ -230,6 +231,7 @@
       enter.querySelector('button').onclick = () => {
         enter.remove();
         if (audio) audio.play().catch(() => {});
+        el.querySelectorAll('video.bg-media').forEach((v) => v.play().catch(() => {}));
       };
     } else if (audio) {
       wireAudio(el, audio, p.soundControl === true, data.preview === true);
