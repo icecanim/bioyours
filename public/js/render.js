@@ -69,7 +69,7 @@
 
   // Rozet nesnesi: { label, icon, color } (sunucu üretir)
   const badgeHtml = (b) => (b
-    ? `<span class="bdg" style="--bc:${esc(b.color)}" title="${esc(b.label)}">${esc(b.icon || '')} ${esc(b.label)}</span>`
+    ? `<span class="badge-ico" style="--bc:${esc(b.color)}" tabindex="0" aria-label="${esc(b.label)}"><span class="badge-g">${esc(b.icon || '')}</span><span class="badge-tip">${esc(b.label)}</span></span>`
     : '');
 
   function bgMedia(bg, bgEffect, preview) {
@@ -205,8 +205,26 @@
     el.querySelectorAll('canvas[data-fx]').forEach((c) => startParticles(c, c.dataset.fx));
 
     const name = el.querySelector('.name');
-    if (name && p.nameEffect === 'scramble') startScramble(name, data.name);
-    if (name && (p.nameEffect || '').startsWith('sparkle')) startSparkle(name);
+    if (name) startNameFx(name, p.nameEffect, data.name);
+
+    // Özel imleç: görsel olarak imlecin yerine çizilir (CORS ve .cur desteğinden bağımsız)
+    if (p.cursor && !data.preview) {
+      const stage = el.querySelector('.stage');
+      const img = new Image();
+      img.className = 'fx-cursor';
+      img.alt = '';
+      img.onload = () => {
+        stage.appendChild(img);
+        stage.classList.add('cursor-follow');
+        const move = (e) => {
+          img.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+          img.classList.add('on');
+        };
+        stage.addEventListener('pointermove', move);
+        cleanup.push(() => stage.removeEventListener('pointermove', move));
+      };
+      img.src = p.cursor;
+    }
 
     const w = el.querySelector('[data-widget]');
     if (w) loadWidget(w, w.dataset.id);
@@ -277,39 +295,70 @@
     cleanup.push(() => cancelAnimationFrame(raf));
   }
 
-  function startScramble(node, text) {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const POOL = '!<>-_\\/[]{}=+*^?#ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+  // İsim efektleri. Rainbow ve glitch CSS ile çalışır, diğerleri burada.
+  function startNameFx(node, kind, text) {
+    if (!kind || kind === 'none') return;
+    if (kind === 'typewriter') return typewriter(node, text);
+    if (kind === 'scramble') return scramble(node, text);
+    if (kind.startsWith('sparkle')) return sparkle(node);
+  }
+
+  function typewriter(node, text) {
+    const chars = [...text];
+    node.classList.add('nfx-typewriter');
+    node.innerHTML = '<span class="tw"></span><span class="tw-caret" aria-hidden="true"></span>';
+    const span = node.querySelector('.tw');
+    let i = 0;
+    let dir = 1;
+    let hold = 0;
+    const id = setInterval(() => {
+      if (hold > 0) { hold -= 1; return; }
+      i += dir;
+      if (i >= chars.length) { i = chars.length; dir = -1; hold = 24; }
+      else if (i <= 0) { i = 0; dir = 1; hold = 10; }
+      span.textContent = chars.slice(0, i).join('');
+    }, 95);
+    cleanup.push(() => clearInterval(id));
+  }
+
+  function scramble(node, text) {
+    const chars = [...text];
+    const frames = chars.length * 2 + 10;
     const run = () => {
-      let frame = 0;
-      const total = 20;
+      let f = 0;
       const id = setInterval(() => {
-        frame += 1;
-        node.textContent = [...text].map((ch, i) => (ch === ' ' || i < (frame / total) * text.length
-          ? ch
-          : chars[Math.floor(Math.random() * chars.length)])).join('');
-        if (frame >= total) {
+        f += 1;
+        node.textContent = chars.map((c, i) => (c === ' ' || f > i * 2 + 5
+          ? c
+          : POOL[Math.floor(Math.random() * POOL.length)])).join('');
+        if (f >= frames) {
           clearInterval(id);
           node.textContent = text;
         }
-      }, 60);
+      }, 42);
       cleanup.push(() => clearInterval(id));
     };
     run();
-    const loop = setInterval(run, 4500);
+    const loop = setInterval(run, frames * 42 + 3500);
     cleanup.push(() => clearInterval(loop));
   }
 
-  function startSparkle(host) {
+  function sparkle(host) {
     const color = host.style.getPropertyValue('--sc') || '#ffffff';
     const id = setInterval(() => {
       const s = document.createElement('i');
+      const size = 3 + Math.random() * 5;
       s.className = 'spark';
-      s.style.left = `${Math.random() * 100}%`;
-      s.style.top = `${Math.random() * 100}%`;
+      s.style.left = `${4 + Math.random() * 92}%`;
+      s.style.top = `${10 + Math.random() * 80}%`;
+      s.style.width = `${size}px`;
+      s.style.height = `${size}px`;
       s.style.setProperty('--sc', color);
       host.appendChild(s);
-      setTimeout(() => s.remove(), 900);
-    }, 180);
+      setTimeout(() => s.remove(), 1000);
+    }, 140);
     cleanup.push(() => clearInterval(id));
   }
 

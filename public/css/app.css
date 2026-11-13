@@ -524,3 +524,87 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
 
 /* Özel imleç: bağlantı ve düğmelerin kendi imleç stilini de geçersiz kılar */
 .stage.has-cursor, .stage.has-cursor * { cursor: var(--cursor) !important; }
+
+/* ================= v11: amblem rozetler, isim efektleri, imleç ================= */
+.badges { gap: 10px; }
+.badge-ico {
+  position: relative; width: 36px; height: 36px; border-radius: 50%; display: inline-grid; place-items: center;
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .12), rgba(8, 9, 12, .94) 72%);
+  border: 1px solid color-mix(in srgb, var(--bc) 45%, transparent);
+  box-shadow: 0 8px 20px -10px var(--bc), inset 0 1px 0 rgba(255, 255, 255, .06);
+  color: var(--bc); cursor: default; outline: none;
+  transition: transform .45s var(--spring), box-shadow .45s var(--ease), border-color .45s var(--ease);
+}
+.badge-g { font-size: 15px; line-height: 1; text-shadow: 0 0 10px var(--bc); transition: transform .45s var(--spring); }
+.badge-ico:hover, .badge-ico:focus-visible {
+  transform: translateY(-3px) scale(1.1); border-color: var(--bc);
+  box-shadow: 0 14px 28px -10px var(--bc), inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.badge-ico:hover .badge-g, .badge-ico:focus-visible .badge-g { transform: rotate(-8deg) scale(1.08); }
+.badge-tip {
+  position: absolute; bottom: calc(100% + 12px); left: 50%; white-space: nowrap; pointer-events: none; z-index: 5;
+  padding: 7px 11px; border-radius: 10px; font-size: 12px; font-weight: 600; letter-spacing: .01em; color: #fff;
+  background: rgba(12, 13, 17, .94); border: 1px solid color-mix(in srgb, var(--bc) 40%, transparent);
+  box-shadow: 0 12px 28px -12px #000; opacity: 0; transform: translate(-50%, 6px) scale(.94);
+  transition: opacity .3s var(--ease), transform .45s var(--spring);
+}
+.badge-tip::after {
+  content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 6px solid transparent; border-top-color: rgba(12, 13, 17, .94);
+}
+.badge-ico:hover .badge-tip, .badge-ico:focus-visible .badge-tip { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.glow-badge .badge-ico { box-shadow: 0 0 22px -4px var(--bc); }
+
+/* Rainbow: daha akıcı kayma */
+.nfx-rainbow { background-size: 220% auto; animation: rainbow 5s linear infinite; }
+
+/* Daktilo: JS ile yazılıp silinir */
+.nfx-typewriter { animation: none; width: auto; overflow: visible; border: 0; white-space: normal; display: inline; }
+.tw-caret {
+  display: inline-block; width: 3px; height: .9em; margin-left: 4px; vertical-align: -0.12em;
+  background: var(--accent); border-radius: 2px; animation: caretb 1s steps(1, end) infinite;
+}
+@keyframes caretb { 50% { opacity: 0; } }
+
+/* Glitch: RGB ayrışması ve kesik kırpmalar */
+.nfx-glitch { animation: gjit 2.8s infinite steps(1, end); }
+.nfx-glitch::before, .nfx-glitch::after {
+  content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  overflow: hidden; pointer-events: none;
+}
+.nfx-glitch::before { color: #ff2d55; animation: g1 2.8s infinite steps(1, end); }
+.nfx-glitch::after { color: #00e5ff; animation: g2 2.8s infinite steps(1, end); }
+@keyframes g1 {
+  0%, 44% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+  45% { clip-path: inset(10% 0 60% 0); transform: translate(-3px, 0); }
+  50% { clip-path: inset(70% 0 5% 0); transform: translate(3px, 0); }
+  55%, 100% { clip-path: inset(100% 0 0 0); transform: translate(0); }
+}
+@keyframes g2 {
+  0%, 60% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+  62% { clip-path: inset(40% 0 30% 0); transform: translate(3px, 0); }
+  66% { clip-path: inset(80% 0 2% 0); transform: translate(-3px, 0); }
+  70%, 100% { clip-path: inset(100% 0 0 0); transform: translate(0); }
+}
+@keyframes gjit { 0%, 44%, 56%, 100% { transform: none; } 45%, 55% { transform: skewX(-6deg); } }
+
+/* Işıltı: renkli parıltı ve kıvılcımlar */
+.nfx-sparkle { text-shadow: 0 0 16px var(--sc, #fff); }
+.spark {
+  position: absolute; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
+  background: var(--sc); box-shadow: 0 0 10px 2px var(--sc);
+  animation: sparkle 1s ease-out forwards;
+}
+@keyframes sparkle {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(0deg); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(45deg); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(.1) rotate(90deg); }
+}
+
+/* Özel imleç: görsel olarak imlecin yerine çizilir */
+.fx-cursor {
+  position: fixed; left: 0; top: 0; z-index: 90; pointer-events: none;
+  max-width: 64px; max-height: 64px; opacity: 0; transition: opacity .2s;
+}
+.fx-cursor.on { opacity: 1; }
+.stage.has-cursor.cursor-follow, .stage.has-cursor.cursor-follow * { cursor: none !important; }
