@@ -18,6 +18,7 @@
   <span id="who" class="handle-pill" hidden></span>
   <span id="topBadges" class="badges"></span>
   <div class="sp"></div>
+  <button id="openPreview" class="btn btn-sm">Önizle</button>
   <a id="viewLink" class="btn btn-ghost btn-sm" target="_blank" rel="noopener" href="/">Profilimi gör ↗</a>
   <button id="logout" class="btn btn-ghost btn-sm">Çıkış</button>
 </header>
@@ -82,18 +83,10 @@
     <!-- GENEL ÖZELLEŞTİRME -->
     <section class="sec">
       <div class="sec-head"><h2>Genel özelleştirme</h2></div>
-      <div class="grid-form two">
+      <div class="grid-form four">
         <div class="field">
-          <label for="displayName">Görünen ad</label>
-          <input id="displayName" type="text" data-k="displayName" maxlength="32" placeholder="Adın veya markan">
-        </div>
-        <div class="field">
-          <label for="location">Konum</label>
-          <input id="location" type="text" data-k="location" maxlength="40" placeholder="İstanbul, Türkiye">
-        </div>
-        <div class="field" style="grid-column: 1 / -1">
           <label for="description">Açıklama <b id="descCount"></b></label>
-          <textarea id="description" data-k="description" maxlength="190" placeholder="Kendini birkaç cümleyle anlat"></textarea>
+          <textarea id="description" data-k="description" maxlength="190" rows="3" placeholder="Kendini birkaç cümleyle anlat"></textarea>
         </div>
         <div class="field">
           <label for="widget">Profil widget'ı</label>
@@ -102,6 +95,17 @@
             <option value="discord">Discord durumu</option>
           </select>
         </div>
+        <div class="field">
+          <label for="opacity">Profil opaklığı <b id="opVal"></b></label>
+          <input id="opacity" type="range" min="20" max="100" step="1">
+          <div class="marks"><span>20%</span><span>50%</span><span>80%</span><span>100%</span></div>
+        </div>
+        <div class="field">
+          <label for="blur">Profil bulanıklığı <b id="blurVal"></b></label>
+          <input id="blur" type="range" min="0" max="80" step="1">
+          <div class="marks"><span>0</span><span>20px</span><span>50px</span><span>80px</span></div>
+        </div>
+
         <div class="field">
           <label for="bgEffect">Arka plan efektleri</label>
           <select id="bgEffect" data-k="bgEffect">
@@ -115,38 +119,31 @@
           </select>
         </div>
         <div class="field">
-          <label for="opacity">Profil opaklığı <b id="opVal"></b></label>
-          <input id="opacity" type="range" min="20" max="100" step="1">
-          <div class="marks"><span>20%</span><span>50%</span><span>80%</span><span>100%</span></div>
+          <label for="location">Konum</label>
+          <input id="location" type="text" data-k="location" maxlength="40" placeholder="İstanbul, Türkiye">
         </div>
-        <div class="field">
-          <label for="blur">Profil bulanıklığı <b id="blurVal"></b></label>
-          <input id="blur" type="range" min="0" max="80" step="1">
-          <div class="marks"><span>0</span><span>20px</span><span>50px</span><span>80px</span></div>
+        <div class="field span-2">
+          <label>Işıltı ayarları</label>
+          <div class="glow-row">
+            <button data-glow="name">Kullanıcı adı</button>
+            <button data-glow="socials">Sosyaller</button>
+            <button data-glow="badges">Rozetler</button>
+          </div>
         </div>
-      </div>
 
-      <div class="field" style="margin-top:16px">
-        <label>Kullanıcı adı efektleri</label>
-        <div class="fx-grid" id="nfxGrid">
-          <button class="fx-tile none" data-nfx="none">Yok</button>
-          <button class="fx-tile" data-nfx="typewriter"><span class="fx-sample nfx-typewriter" style="--n:4">Bio</span></button>
-          <button class="fx-tile" data-nfx="rainbow"><span class="fx-sample nfx-rainbow">Bio</span></button>
-          <button class="fx-tile" data-nfx="glitch"><span class="fx-sample nfx-glitch" data-text="Bio">Bio</span></button>
-          <button class="fx-tile" data-nfx="scramble"><span class="fx-sample">Bıo</span></button>
-          <button class="fx-tile" data-nfx="sparkle-white"><span class="fx-sample" style="color:#fff;text-shadow:0 0 8px #fff">Bio</span></button>
-          <button class="fx-tile" data-nfx="sparkle-blue"><span class="fx-sample" style="color:#5ce1ff;text-shadow:0 0 8px #5ce1ff">Bio</span></button>
-          <button class="fx-tile" data-nfx="sparkle-red"><span class="fx-sample" style="color:#ff5a6b;text-shadow:0 0 8px #ff5a6b">Bio</span></button>
-          <button class="fx-tile" data-nfx="sparkle-yellow"><span class="fx-sample" style="color:#ffd84d;text-shadow:0 0 8px #ffd84d">Bio</span></button>
-        </div>
-      </div>
-
-      <div class="field" style="margin-top:16px">
-        <label>Işıltı ayarları</label>
-        <div class="glow-row">
-          <button data-glow="name">Kullanıcı adı</button>
-          <button data-glow="socials">Sosyaller</button>
-          <button data-glow="badges">Rozetler</button>
+        <div class="field span-4">
+          <label>Kullanıcı adı efektleri</label>
+          <div class="fx-grid" id="nfxGrid">
+            <button class="fx-tile none" data-nfx="none">Yok</button>
+            <button class="fx-tile" data-nfx="typewriter"><span class="fx-sample nfx-typewriter" style="--n:4">Bio</span></button>
+            <button class="fx-tile" data-nfx="rainbow"><span class="fx-sample nfx-rainbow">Bio</span></button>
+            <button class="fx-tile" data-nfx="glitch"><span class="fx-sample nfx-glitch" data-text="Bio">Bio</span></button>
+            <button class="fx-tile" data-nfx="scramble"><span class="fx-sample">Bıo</span></button>
+            <button class="fx-tile" data-nfx="sparkle-white"><span class="fx-sample" style="color:#fff;text-shadow:0 0 8px #fff">Bio</span></button>
+            <button class="fx-tile" data-nfx="sparkle-blue"><span class="fx-sample" style="color:#5ce1ff;text-shadow:0 0 8px #5ce1ff">Bio</span></button>
+            <button class="fx-tile" data-nfx="sparkle-red"><span class="fx-sample" style="color:#ff5a6b;text-shadow:0 0 8px #ff5a6b">Bio</span></button>
+            <button class="fx-tile" data-nfx="sparkle-yellow"><span class="fx-sample" style="color:#ffd84d;text-shadow:0 0 8px #ffd84d">Bio</span></button>
+          </div>
         </div>
       </div>
     </section>
@@ -154,20 +151,22 @@
     <!-- RENK ÖZELLEŞTİRME -->
     <section class="sec">
       <div class="sec-head"><h2>Renk özelleştirme</h2></div>
-      <div class="row2">
-        <div class="field"><label>Vurgu rengi</label><input type="color" data-k="colors.accent"></div>
-        <div class="field"><label>Metin rengi</label><input type="color" data-k="colors.text"></div>
-        <div class="field"><label>Arka plan rengi</label><input type="color" data-k="background.color"></div>
-        <div class="field"><label>İkon rengi</label><input type="color" data-k="colors.icon"></div>
-      </div>
-      <div class="field" style="margin-top:14px">
-        <button id="gradBtn" class="gradbtn">Profil gradyanını aç</button>
-      </div>
-      <div id="gradRow" class="row2" style="margin-top:14px" hidden>
-        <div class="field"><label>Gradyan ikinci renk</label><input type="color" data-k="background.color2"></div>
-        <div class="field">
-          <label for="angle">Gradyan yönü <b id="angleVal"></b></label>
-          <input id="angle" type="range" min="0" max="360" step="1" data-k="background.angle">
+      <div class="color-layout">
+        <div class="grid-form two">
+          <div class="field"><label>Vurgu rengi</label><input type="color" data-k="colors.accent"></div>
+          <div class="field"><label>Metin rengi</label><input type="color" data-k="colors.text"></div>
+          <div class="field"><label>Arka plan rengi</label><input type="color" data-k="background.color"></div>
+          <div class="field"><label>İkon rengi</label><input type="color" data-k="colors.icon"></div>
+        </div>
+        <div class="grid-form">
+          <button id="gradBtn" class="gradbtn">Profil gradyanını aç</button>
+          <div id="gradRow" class="grid-form two" hidden>
+            <div class="field"><label>Gradyan ikinci renk</label><input type="color" data-k="background.color2"></div>
+            <div class="field">
+              <label for="angle">Gradyan yönü <b id="angleVal"></b></label>
+              <input id="angle" type="range" min="0" max="360" step="1" data-k="background.angle">
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -181,7 +180,7 @@
         <div class="tog"><span>Kutu renklerini değiştir</span><button class="switch" data-toggle="boxColors" aria-label="Kutu renklerini değiştir"></button></div>
         <div class="tog"><span>Ses kontrolü</span><button class="switch" data-toggle="soundControl" aria-label="Ses kontrolü"></button></div>
         <div class="tog"><span>Discord avatarını kullan</span><button class="switch" data-toggle="useDiscordAvatar" aria-label="Discord avatarını kullan"></button></div>
-        <div class="tog"><span>Avatar çerçevesi</span><button class="switch" data-toggle="avatarRing" aria-label="Avatar çerçevesi"></button></div>
+        <div class="tog"><span>Discord avatar süsü</span><button class="switch" data-toggle="avatarRing" aria-label="Discord avatar süsü"></button></div>
       </div>
     </section>
 
@@ -192,7 +191,7 @@
         <span>Premium ile 50 bağlantıya kadar çıkabilirsin.</span>
         <a class="btn btn-primary btn-sm" href="https://discord.gg/6rumyru5r3" target="_blank" rel="noopener">Discord'dan al</a>
       </div>
-      <div class="sec-head" style="margin:12px 0 10px">
+      <div class="sec-head" style="margin:14px 0 12px">
         <span class="small muted">Platform, bağlantı adresine göre otomatik tanınır.</span>
         <button id="addLink" class="btn btn-sm">+ Bağlantı ekle</button>
       </div>
@@ -200,13 +199,9 @@
     </section>
 
   </div>
-
-  <aside class="preview">
-    <span class="preview-label">Canlı önizleme</span>
-    <div id="preview" class="phone"></div>
-  </aside>
 </div>
 
+<!-- KAYIT ÇUBUĞU -->
 <div class="savebar">
   <div class="savebar-in">
     <div class="left">
@@ -214,6 +209,17 @@
       <span id="dirty" class="dirty" hidden>Kaydedilmemiş değişiklik</span>
     </div>
     <button id="save" class="btn btn-primary">Kaydet</button>
+  </div>
+</div>
+
+<!-- ÖNİZLEME PENCERESİ -->
+<div class="modal" id="previewModal" hidden>
+  <div class="preview-card">
+    <div class="sec-head" style="margin:0">
+      <h2>Canlı önizleme</h2>
+      <button id="closePreview" class="btn btn-sm btn-ghost">Kapat</button>
+    </div>
+    <div id="preview" class="phone"></div>
   </div>
 </div>
 

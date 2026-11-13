@@ -364,6 +364,15 @@
     });
 
     $('#viewLink').href = `/${user.username}`;
+
+    // Önizleme penceresi
+    const openPreview = () => { $('#previewModal').hidden = false; preview(); };
+    const closePreview = () => { $('#previewModal').hidden = true; };
+    $('#openPreview').onclick = openPreview;
+    $('#closePreview').onclick = closePreview;
+    $('#previewModal').addEventListener('click', (e) => { if (e.target.id === 'previewModal') closePreview(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePreview(); });
+
     renderLinks();
     touch();
   }
