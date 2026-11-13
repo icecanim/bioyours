@@ -30,6 +30,17 @@
     <input id="q" class="search" placeholder="Ara: kullanıcı adı, isim, e-posta, ID" autocomplete="off" spellcheck="false">
   </div>
 
+  <div class="card" style="padding:18px;margin-bottom:14px">
+    <div class="sec-head" style="margin-bottom:12px"><h2>Özel rozetler</h2><span>Admin ve üstü oluşturabilir</span></div>
+    <form id="defForm" class="defform">
+      <input id="defLabel" type="text" maxlength="24" placeholder="Rozet adı" required>
+      <input id="defIcon" type="text" maxlength="3" placeholder="İkon (ör. ★)">
+      <input id="defColor" type="color" value="#9d6bff" aria-label="Renk">
+      <button class="btn btn-primary btn-sm" type="submit">Rozet oluştur</button>
+    </form>
+    <div id="defList" class="chips" style="margin-top:12px"></div>
+  </div>
+
   <div class="card tbl-wrap">
     <table class="tbl">
       <thead>

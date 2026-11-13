@@ -1,13 +1,14 @@
 // Profil doğrulama, varsayılanlar ve dışarıya açık görünüm.
 // Kullanıcıdan gelen her alan burada temizlenir. Tarayıcıya güvenilmez.
 const crypto = require('crypto');
-const { effectiveBadges, hasPremium } = require('./roles');
+const db = require('./db');
+const { effectiveBadges, resolveBadges, hasPremium } = require('./roles');
 
 const RESERVED = new Set([
   'api', 'auth', 'dashboard', 'yonetim', 'admin', 'login', 'logout', 'settings',
   'premium', 'badges', 'links', 'discord', 'help', 'support', 'terms', 'privacy',
   'css', 'js', 'img', 'views', 'healthz', 'robots.txt', 'favicon.ico', 'index',
-  'null', 'undefined',
+  'null', 'undefined', 'vendor',
 ]);
 
 const USERNAME_RE = /^[a-z0-9_.]{3,20}$/;
@@ -41,7 +42,6 @@ function detectPlatform(url) {
   return 'web';
 }
 
-// Efekt listeleri. Premium gerektirenler PREMIUM_* ile işaretli.
 const BG_EFFECTS = ['none', 'aurora', 'snow', 'rain', 'blur', 'night', 'tv'];
 const NAME_EFFECTS = [
   'none', 'rainbow', 'typewriter', 'glitch', 'scramble',
@@ -51,6 +51,9 @@ const PREMIUM_NAME_EFFECTS = [
   'typewriter', 'glitch', 'scramble', 'sparkle-white', 'sparkle-blue', 'sparkle-red', 'sparkle-yellow',
 ];
 const WIDGETS = ['off', 'discord'];
+// Hazır fontlar (Google Fonts). Anahtar -> istemcide font ailesi eşlemesi.
+const NAME_FONTS = ['default', 'inter', 'space', 'playfair', 'orbitron', 'pixel', 'pacifico', 'bebas', 'custom'];
+const LINK_DISPLAY = ['card', 'icon'];
 
 function defaultProfile() {
   return {
@@ -63,6 +66,8 @@ function defaultProfile() {
     background: { type: 'color', color: '#0b0c0f', color2: '#2a1d4d', angle: 135, url: '' },
     bgEffect: 'none',
     nameEffect: 'none',
+    nameFont: 'default',
+    customFont: '',
     widget: 'off',
     effects: { blur: 12, opacity: 0.85 },
     glow: { name: false, socials: false, badges: false },
@@ -71,7 +76,9 @@ function defaultProfile() {
     animatedTitle: false,
     boxColors: false,
     soundControl: false,
+    entryText: '',
     audio: '',
+    clickSound: '',
     cursor: '',
     links: [],
   };
@@ -111,6 +118,11 @@ function sanitizeProfile(input, user) {
   let nameEffect = pick(p.nameEffect, NAME_EFFECTS, 'none');
   if (!premium && PREMIUM_NAME_EFFECTS.includes(nameEffect)) nameEffect = 'none';
 
+  let nameFont = pick(p.nameFont, NAME_FONTS, 'default');
+  if (!premium && nameFont !== 'default') nameFont = 'default';
+  const customFont = premium ? safeUrl(p.customFont) : '';
+  if (nameFont === 'custom' && !customFont) nameFont = 'default';
+
   const links = (Array.isArray(p.links) ? p.links : [])
     .slice(0, linkLimit)
     .map((l) => {
@@ -123,6 +135,7 @@ function sanitizeProfile(input, user) {
         url,
         platform: detectPlatform(url),
         enabled: item.enabled !== false,
+        display: pick(item.display, LINK_DISPLAY, 'card'),
       };
     })
     .filter(Boolean);
@@ -131,7 +144,7 @@ function sanitizeProfile(input, user) {
     displayName: clip(p.displayName, 32),
     description: clip(p.description, 190),
     location: clip(p.location, 40),
-    avatar: safeUrl(p.avatar, ['https:']),
+    avatar: safeUrl(p.avatar),
     useDiscordAvatar: p.useDiscordAvatar === true,
     avatarRing: p.avatarRing === true,
     background: {
@@ -139,10 +152,12 @@ function sanitizeProfile(input, user) {
       color: hex(bg.color, '#0b0c0f'),
       color2: hex(bg.color2, '#2a1d4d'),
       angle: num(bg.angle, 0, 360, 135),
-      url: bgType === 'image' || bgType === 'video' ? safeUrl(bg.url, ['https:']) : '',
+      url: bgType === 'image' || bgType === 'video' ? safeUrl(bg.url) : '',
     },
     bgEffect: pick(p.bgEffect, BG_EFFECTS, 'none'),
     nameEffect,
+    nameFont,
+    customFont,
     widget: pick(p.widget, WIDGETS, 'off'),
     effects: {
       blur: num(fx.blur, 0, 80, 12),
@@ -163,8 +178,10 @@ function sanitizeProfile(input, user) {
     animatedTitle: p.animatedTitle === true,
     boxColors: p.boxColors === true,
     soundControl: p.soundControl === true,
-    audio: premium ? safeUrl(p.audio, ['https:']) : '',
-    cursor: premium ? safeUrl(p.cursor, ['https:']) : '',
+    entryText: premium ? clip(p.entryText, 30) : '',
+    audio: premium ? safeUrl(p.audio) : '',
+    clickSound: premium ? safeUrl(p.clickSound) : '',
+    cursor: premium ? safeUrl(p.cursor) : '',
     links,
   };
 }
@@ -178,7 +195,7 @@ function publicProfile(u) {
   return {
     username: u.username,
     avatar: useDiscordAvatar ? u.avatar : (p.avatar || u.avatar || ''),
-    badges: effectiveBadges(u),
+    badges: resolveBadges(effectiveBadges(u), db.read().badgeDefs || {}),
     premium: hasPremium(u),
     discordId: discord && p.widget === 'discord' ? u.id.split(':')[1] : '',
     profile: { ...p, displayName: p.displayName || u.username },
@@ -187,6 +204,6 @@ function publicProfile(u) {
 
 module.exports = {
   RESERVED, USERNAME_RE, validUsername, detectPlatform,
-  BG_EFFECTS, NAME_EFFECTS, PREMIUM_NAME_EFFECTS,
+  BG_EFFECTS, NAME_EFFECTS, PREMIUM_NAME_EFFECTS, NAME_FONTS, LINK_DISPLAY,
   defaultProfile, sanitizeProfile, publicProfile,
 };

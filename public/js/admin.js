@@ -6,7 +6,11 @@
   }[c]));
 
   const RANK = { owner: 100, admin: 80, mod: 60, user: 0 };
-  const GRANTS = { verified: 'Doğrulanmış', early: 'Erken Kullanıcı', supporter: 'Destekçi' };
+  const GRANTS = {
+    verified: 'Doğrulanmış', early: 'Erken Kullanıcı', supporter: 'Destekçi',
+    partner: 'Partner', developer: 'Geliştirici', beta: 'Beta Tester', bughunter: 'Bug Avcısı',
+  };
+  let defs = [];
 
   let me = null;
   const myRank = () => RANK[me.role] ?? 0;
@@ -51,6 +55,12 @@
           .map((r) => `<option value="${r}"${t.role === r ? ' selected' : ''}>${r}</option>`).join('')}</select>`
       : `<span class="chip">${esc(t.role)}</span>`;
 
+    const customs = defs.map((d) => {
+      const key = `custom:${d.id}`;
+      const has = (t.manualBadges || []).includes(key);
+      return `<button class="chip${has ? ' on' : ''}" ${dG} data-act="badge" data-badge="${key}" data-on="${!has}" style="--bc:${esc(d.color)}">${esc(d.icon)} ${esc(d.label)}</button>`;
+    }).join('');
+
     return `<tr data-id="${esc(t.id)}">
       <td><div class="who">${t.avatar ? `<img src="${esc(t.avatar)}" alt="">` : '<span class="av"></span>'}
         <div><b>${esc(t.name || '—')}</b><div class="muted small">${esc(t.email || '')}</div></div></div></td>
@@ -58,15 +68,23 @@
         ? `<a href="/${esc(t.username)}" target="_blank" rel="noopener">@${esc(t.username)}</a>`
         : '<span class="muted">—</span>'}<div class="muted small">${esc(t.provider)}</div></td>
       <td>${role}</td>
-      <td><div class="chips">${grants}</div></td>
+      <td><div class="chips">${grants}${customs}</div></td>
       <td><button class="chip${t.premium ? ' on' : ''}" ${dG} data-act="premium" data-on="${!t.premium}">${t.premium ? 'Premium ✓' : 'Premium ver'}</button></td>
       <td><button class="chip${t.banned ? ' danger' : ''}" ${dB} data-act="ban" data-on="${!t.banned}">${t.banned ? 'Banı kaldır' : 'Banla'}</button></td>
     </tr>`;
   }
 
+  function renderDefs() {
+    $('#defList').innerHTML = defs.map((d) => `<span class="chip on" style="--bc:${esc(d.color)}">${esc(d.icon)} ${esc(d.label)}
+      <button class="chip danger" data-del="${esc(d.id)}" style="margin-left:6px">Sil</button></span>`).join('')
+      || '<span class="muted small">Henüz özel rozet yok.</span>';
+  }
+
   async function load() {
     const q = $('#q').value.trim();
-    const { users, total } = await api(`/api/admin/users?q=${encodeURIComponent(q)}`);
+    const { users, total, badgeDefs } = await api(`/api/admin/users?q=${encodeURIComponent(q)}`);
+    defs = badgeDefs || [];
+    renderDefs();
     $('#total').textContent = total;
     $('#rows').innerHTML = users.map(row).join('') || '<tr><td colspan="6" class="muted">Sonuç bulunamadı</td></tr>';
   }
@@ -116,6 +134,32 @@
     });
     $('#rows').addEventListener('click', onClick);
     $('#rows').addEventListener('change', onRole);
+    $('#defForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('/api/admin/badge-defs', 'POST', {
+          label: $('#defLabel').value.trim(),
+          icon: $('#defIcon').value.trim() || '★',
+          color: $('#defColor').value,
+        });
+        $('#defLabel').value = '';
+        toast('Rozet oluşturuldu ✓');
+        await load();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    });
+    $('#defList').addEventListener('click', async (e) => {
+      const id = e.target.closest('[data-del]')?.dataset.del;
+      if (!id || !confirm('Bu rozet silinsin mi? Tüm kullanıcılardan kalkacak.')) return;
+      try {
+        await api(`/api/admin/badge-defs/${encodeURIComponent(id)}`, 'DELETE');
+        toast('Rozet silindi');
+        await load();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    });
     await load();
   })().catch((err) => toast(err.message, true));
 })();

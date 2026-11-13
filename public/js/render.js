@@ -6,18 +6,7 @@
 
   const hex = (v, fb) => (/^#[0-9a-f]{6}$/i.test(v || '') ? v : fb);
   const num = (v, fb) => (Number.isFinite(Number(v)) ? Number(v) : fb);
-  // CSS url() içinde güvenle kullanılacak hale getirir
   const cssUrl = (u) => `url(${encodeURI(u).replace(/[()'"]/g, (ch) => '%' + ch.charCodeAt(0).toString(16))})`;
-
-  const BADGES = {
-    owner: { label: 'Owner', icon: '♛', color: '#ff5a6b' },
-    admin: { label: 'Admin', icon: '◆', color: '#f5b84b' },
-    mod: { label: 'Moderatör', icon: '⚒', color: '#5ce1ff' },
-    verified: { label: 'Doğrulanmış', icon: '✓', color: '#49d17d' },
-    early: { label: 'Erken Kullanıcı', icon: '✦', color: '#9fd8ff' },
-    supporter: { label: 'Destekçi', icon: '♥', color: '#ff8fc7' },
-    premium: { label: 'Premium', icon: '◇', color: '#b98cff' },
-  };
 
   const PLATFORMS = {
     youtube: ['#ff3b3b', 'YouTube'], x: ['#e7e9ea', 'X'], instagram: ['#e1306c', 'Instagram'],
@@ -28,15 +17,59 @@
     facebook: ['#1877f2', 'Facebook'], web: ['#9d6bff', 'Web'],
   };
 
+  // Hazır fontlar: anahtar -> [Google Fonts ailesi, yedek]
+  const FONTS = {
+    inter: ['Inter', 'sans-serif'],
+    space: ['Space Grotesk', 'sans-serif'],
+    playfair: ['Playfair Display', 'serif'],
+    orbitron: ['Orbitron', 'sans-serif'],
+    pixel: ['Press Start 2P', 'monospace'],
+    pacifico: ['Pacifico', 'cursive'],
+    bebas: ['Bebas Neue', 'sans-serif'],
+  };
+
   const SPARK = { 'sparkle-white': '#ffffff', 'sparkle-blue': '#5ce1ff', 'sparkle-red': '#ff5a6b', 'sparkle-yellow': '#ffd84d' };
 
-  // Her render öncesi önceki efektlerin zamanlayıcılarını durdurur
   let cleanup = [];
   const stopFx = () => { cleanup.forEach((fn) => fn()); cleanup = []; };
   const widgetCache = new Map();
+  const loadedFonts = new Set();
 
-  const badgeHtml = (key) => (BADGES[key]
-    ? `<span class="bdg" style="--bc:${BADGES[key].color}">${BADGES[key].icon} ${BADGES[key].label}</span>`
+  // Premium özel font: @font-face ile bir kez yüklenir
+  function customFontFamily(url) {
+    const id = Math.abs([...url].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0));
+    const family = `BioCustom${id}`;
+    if (!loadedFonts.has(family)) {
+      loadedFonts.add(family);
+      const st = document.createElement('style');
+      st.textContent = `@font-face{font-family:'${family}';src:url("${encodeURI(url)}");font-display:swap;}`;
+      document.head.appendChild(st);
+    }
+    return `'${family}', sans-serif`;
+  }
+
+  function googleFont(name) {
+    const key = `g:${name}`;
+    if (!loadedFonts.has(key)) {
+      loadedFonts.add(key);
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name).replace(/%20/g, '+')}:wght@400;700;800&display=swap`;
+      document.head.appendChild(l);
+    }
+  }
+
+  function nameFontFamily(p) {
+    if (p.nameFont === 'custom' && p.customFont) return customFontFamily(p.customFont);
+    const f = FONTS[p.nameFont];
+    if (!f) return '';
+    googleFont(f[0]);
+    return `'${f[0]}', ${f[1]}`;
+  }
+
+  // Rozet nesnesi: { label, icon, color } (sunucu üretir)
+  const badgeHtml = (b) => (b
+    ? `<span class="bdg" style="--bc:${esc(b.color)}" title="${esc(b.label)}">${esc(b.icon || '')} ${esc(b.label)}</span>`
     : '');
 
   function bgMedia(bg, bgEffect) {
@@ -85,8 +118,11 @@
     const fx = p.effects || {};
     const glow = p.glow || {};
     const name = p.displayName || data.username || '';
-    const links = (p.links || []).filter((l) => l.enabled !== false && /^https?:\/\//i.test(l.url || ''));
+    const usable = (p.links || []).filter((l) => l.enabled !== false && /^https?:\/\//i.test(l.url || ''));
+    const cards = usable.filter((l) => l.display !== 'icon');
+    const icons = usable.filter((l) => l.display === 'icon');
 
+    const family = nameFontFamily(p);
     const style = [
       `--bgc:${hex(bg.color, '#0b0c0f')}`,
       `--accent:${hex(c.accent, '#9d6bff')}`,
@@ -95,6 +131,7 @@
       `--icon:${hex(c.icon, '#ffffff')}`,
       `--blur:${num(fx.blur, 12)}px`,
       `--opacity:${num(fx.opacity, 0.85)}`,
+      family ? `--nfont:${family}` : '',
       p.cursor ? `--cursor:${cssUrl(p.cursor)} 0 0, auto` : '',
     ].filter(Boolean).join(';');
 
@@ -113,7 +150,7 @@
       ? '<button class="sound-btn" type="button" aria-label="Sesi aç veya kapat">♪</button>'
       : '';
 
-    const linksHtml = links.map((l, i) => {
+    const cardsHtml = cards.map((l, i) => {
       const [col, label] = PLATFORMS[l.platform] || PLATFORMS.web;
       const cls = ['lnk', p.boxColors ? 'boxed' : '', glow.socials ? 'glow-social' : ''].filter(Boolean).join(' ');
       const pfCls = ['pf', p.monochromeIcons ? 'mono' : ''].filter(Boolean).join(' ');
@@ -123,6 +160,19 @@
         <span class="arrow" aria-hidden="true">↗</span>
       </a>`;
     }).join('');
+
+    const iconsHtml = icons.length
+      ? `<div class="icons">${icons.map((l, i) => {
+          const [col, label] = PLATFORMS[l.platform] || PLATFORMS.web;
+          const pfCls = ['ico', p.monochromeIcons ? 'mono' : ''].filter(Boolean).join(' ');
+          return `<a class="${pfCls}" style="--i:${i};--pf:${col}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow" title="${esc(l.title)}" aria-label="${esc(l.title)}">${esc(label.charAt(0))}</a>`;
+        }).join('')}</div>`
+      : '';
+
+    // Giriş ekranı: yalnızca yayındaki sayfada (önizlemede değil)
+    const entry = data.preview
+      ? ''
+      : `<div class="enter" id="bioEnter"><button class="enter-btn" type="button">${esc(p.entryText || 'Click to enter')}</button></div>`;
 
     el.innerHTML = `
       <div class="stage" style="${style}">
@@ -135,11 +185,13 @@
           ${badges ? `<div class="badges${glow.badges ? ' glow-badge' : ''}">${badges}</div>` : ''}
           ${p.description ? `<p class="desc">${esc(p.description)}</p>` : ''}
           ${widget}
-          <div class="links">${linksHtml}</div>
+          <div class="links">${cardsHtml}</div>
+          ${iconsHtml}
         </div>
         <p class="foot-mini">bio.yours</p>
         ${soundBtn}
         ${audio}
+        ${entry}
       </div>`;
 
     wire(el, { ...data, name }, p);
@@ -159,7 +211,31 @@
     if (w) loadWidget(w, w.dataset.id);
 
     const audio = el.querySelector('audio');
-    if (audio) wireAudio(el, audio, p.soundControl === true, data.preview === true);
+    const enter = el.querySelector('#bioEnter');
+
+    if (!data.preview) {
+      // Tıklama sesi: sayfanın herhangi bir yerine tıklanınca (premium)
+      if (p.clickSound) {
+        const onDown = () => {
+          const s = new Audio(p.clickSound);
+          s.volume = 0.5;
+          s.play().catch(() => {});
+        };
+        window.addEventListener('pointerdown', onDown);
+        cleanup.push(() => window.removeEventListener('pointerdown', onDown));
+      }
+    }
+
+    if (enter) {
+      enter.querySelector('button').onclick = () => {
+        enter.remove();
+        if (audio) audio.play().catch(() => {});
+      };
+    } else if (audio) {
+      wireAudio(el, audio, p.soundControl === true, data.preview === true);
+    }
+    // Giriş ekranı kalkınca ses kontrolü de çalışsın
+    if (enter && audio) wireAudio(el, audio, p.soundControl === true, false, true);
   }
 
   function startParticles(canvas, kind) {
@@ -259,7 +335,8 @@
       <span><b>${esc(discordLabels[d.discord_status] || 'Çevrimdışı')}</b>${act ? ` · ${esc(act.name)}` : ''}</span>`;
   }
 
-  function wireAudio(el, audio, soundControl, preview) {
+  // skipPlay: giriş ekranından sonra çağrılır, sesi yeniden başlatmaz
+  function wireAudio(el, audio, soundControl, preview, afterEnter = false) {
     audio.volume = 0.6;
     const btn = el.querySelector('.sound-btn');
     const setIcon = () => { if (btn) btn.textContent = audio.paused ? '♪' : '❚❚'; };
@@ -271,13 +348,12 @@
       };
     }
     setIcon();
-    // Önizlemede otomatik çalma yok. Ses kontrolü kapalıysa ilk tıklamada çalar.
-    if (!preview && !soundControl) {
+    if (!preview && !soundControl && !afterEnter) {
       const first = () => { play(); };
       window.addEventListener('pointerdown', first, { once: true });
       cleanup.push(() => window.removeEventListener('pointerdown', first));
     }
   }
 
-  window.BioRender = { render, badgeHtml, BADGES, esc };
+  window.BioRender = { render, badgeHtml, esc };
 })();

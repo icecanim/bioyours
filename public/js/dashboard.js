@@ -1,17 +1,19 @@
 // Panel mantığı: yüklemeler, efektler, anahtarlar, bağlantılar, önizleme ve kayıt.
+import { upload } from './vendor/blob-client.js';
+
+let currentUsername = '';
 (() => {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
   const { render, badgeHtml, esc } = window.BioRender;
 
-  const MB = 1024 * 1024;
-  const LIMITS = { avatar: 2 * MB, bgImage: 6 * MB, bgVideo: 15 * MB, audio: 8 * MB, cursor: 256 * 1024 };
   const NFX_PREMIUM = ['typewriter', 'glitch', 'scramble', 'sparkle-white', 'sparkle-blue', 'sparkle-red', 'sparkle-yellow'];
 
   const MIME = {
     cur: 'image/x-icon', ico: 'image/x-icon', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
     webp: 'image/webp', gif: 'image/gif', mp4: 'video/mp4', webm: 'video/webm',
     mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac',
+    woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf',
   };
 
   const toast = (msg, bad = false) => {
@@ -42,16 +44,15 @@
     return MIME[ext] || '';
   }
 
+  // Dosya doğrudan Vercel Blob'a gider. Sunucu yalnızca yükleme izni verir.
   async function uploadFile(kind, file) {
-    const res = await fetch(`/api/upload?kind=${kind}`, {
-      method: 'POST',
-      headers: { 'Content-Type': mimeFor(file) },
-      body: file,
-      credentials: 'same-origin',
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    const blob = await upload(`${kind}/${currentUsername}.${ext}`, file, {
+      access: 'public',
+      handleUploadUrl: '/api/blob/upload',
+      contentType: mimeFor(file),
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Yükleme başarısız');
-    return data.url;
+    return blob.url;
   }
 
   const get = (o, path) => path.split('.').reduce((a, k) => a?.[k], o);
@@ -64,7 +65,6 @@
     const m = (url || '').split('?')[0].split('.').pop() || '';
     return m.length <= 4 ? m.toUpperCase() : '';
   };
-  const humanLimit = (n) => (n < MB ? `${Math.round(n / 1024)} KB` : `${Math.round(n / MB)} MB`);
 
   function claim() {
     const want = (sessionStorage.getItem('bio_want') || '').replace(/[^a-z0-9_.]/g, '').slice(0, 20);
@@ -170,6 +170,12 @@
       setTag($('#cuTag'), draft.cursor);
       $('#cursorRemove').hidden = !draft.cursor;
 
+      $('#fontName').textContent = draft.customFont ? 'Özel font yüklü' : 'Aa — .woff2, .ttf, .otf yükle';
+      $('#fontTag').textContent = extOf(draft.customFont);
+      $('#fontTag').hidden = !draft.customFont;
+      $('#fontRemove').hidden = !draft.customFont;
+      $('#clickName').textContent = draft.clickSound ? '♪ Tıklama sesi yüklü' : '♪ Her tıklamada çalacak ses';
+      $('#clickRemove').hidden = !draft.clickSound;
       $('#premiumStrip').hidden = premium;
     }
 
@@ -225,8 +231,7 @@
     };
 
     // ---- dosya yükleyiciler ----
-    async function guarded(file, limit, kind, apply, okText) {
-      if (file.size > limit) return toast(`Dosya çok büyük. En fazla ${humanLimit(limit)}`, true);
+    async function guarded(file, kind, apply, okText) {
       try {
         toast('Yükleniyor…');
         apply(await uploadFile(kind, file));
@@ -246,7 +251,7 @@
       if (!f) return;
       const isVideo = (f.type || '').startsWith('video/') || /\.(mp4|webm)$/i.test(f.name);
       if (isVideo && !premium) return toast('Video arka plan Premium ile açılır', true);
-      guarded(f, isVideo ? LIMITS.bgVideo : LIMITS.bgImage, 'background', (url) => {
+      guarded(f, 'background', (url) => {
         draft.background.url = url;
         draft.background.type = isVideo ? 'video' : 'image';
       }, 'Arka plan yüklendi');
@@ -257,14 +262,14 @@
       reset('#audioFile');
       if (!f) return;
       if (!premium) return toast('Ses yükleme Premium ile açılır', true);
-      guarded(f, LIMITS.audio, 'audio', (url) => { draft.audio = url; }, 'Ses yüklendi');
+      guarded(f, 'audio', (url) => { draft.audio = url; }, 'Ses yüklendi');
     };
 
     $('#avatarFile').onchange = () => {
       const f = pick('#avatarFile');
       reset('#avatarFile');
       if (!f) return;
-      guarded(f, LIMITS.avatar, 'avatar', (url) => {
+      guarded(f, 'avatar', (url) => {
         draft.avatar = url;
         draft.useDiscordAvatar = false;
       }, 'Fotoğraf yüklendi');
@@ -275,7 +280,7 @@
       reset('#cursorFile');
       if (!f) return;
       if (!premium) return toast('Özel imleç Premium ile açılır', true);
-      guarded(f, LIMITS.cursor, 'cursor', (url) => { draft.cursor = url; }, 'İmleç yüklendi');
+      guarded(f, 'cursor', (url) => { draft.cursor = url; }, 'İmleç yüklendi');
     };
 
     $('#bgRemove').onclick = () => {
@@ -287,6 +292,30 @@
     $('#avRemove').onclick = () => { draft.avatar = ''; touch(); };
     $('#cursorRemove').onclick = () => { draft.cursor = ''; touch(); };
 
+    // Özel font (premium)
+    $('#fontFile').onchange = () => {
+      const f = pick('#fontFile');
+      reset('#fontFile');
+      if (!f) return;
+      if (!premium) return toast('Özel font Premium ile açılır', true);
+      guarded(f, 'font', (url) => { draft.customFont = url; draft.nameFont = 'custom'; }, 'Font yüklendi');
+    };
+    $('#fontRemove').onclick = () => {
+      draft.customFont = '';
+      if (draft.nameFont === 'custom') draft.nameFont = 'default';
+      touch();
+    };
+
+    // Tıklama sesi (premium)
+    $('#clickFile').onchange = () => {
+      const f = pick('#clickFile');
+      reset('#clickFile');
+      if (!f) return;
+      if (!premium) return toast('Tıklama sesi Premium ile açılır', true);
+      guarded(f, 'click', (url) => { draft.clickSound = url; }, 'Tıklama sesi yüklendi');
+    };
+    $('#clickRemove').onclick = () => { draft.clickSound = ''; touch(); };
+
     // ---- bağlantılar ----
     const renderLinks = () => {
       $('#linkList').innerHTML = draft.links.map((l, i) => `
@@ -294,6 +323,10 @@
           <div class="lr-main">
             <input type="text" data-f="title" maxlength="40" placeholder="Başlık" value="${esc(l.title)}" aria-label="Bağlantı başlığı">
             <input type="text" data-f="url" placeholder="https://..." value="${esc(l.url)}" aria-label="Bağlantı adresi">
+            <select data-f="display" aria-label="Görünüm">
+              <option value="card" ${l.display !== 'icon' ? 'selected' : ''}>Kart olarak göster</option>
+              <option value="icon" ${l.display === 'icon' ? 'selected' : ''}>Sadece ikon (gizli kart)</option>
+            </select>
           </div>
           <div class="lr-actions">
             <button class="chip" data-act="toggle">${l.enabled === false ? 'Gizli' : 'Açık'}</button>
@@ -304,12 +337,14 @@
         </div>`).join('') || '<p class="muted small">Henüz bağlantın yok. "Bağlantı ekle" ile başla.</p>';
     };
 
-    $('#linkList').addEventListener('input', (e) => {
+    const linkEdit = (e) => {
       const row = e.target.closest('.link-row');
       if (!row || !e.target.dataset.f) return;
       draft.links[Number(row.dataset.i)][e.target.dataset.f] = e.target.value;
       touch();
-    });
+    };
+    $('#linkList').addEventListener('input', linkEdit);
+    $('#linkList').addEventListener('change', linkEdit);
 
     $('#linkList').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-act]');
@@ -365,6 +400,13 @@
 
     $('#viewLink').href = `/${user.username}`;
 
+    // Premium olmayanlar için kilitli alanlar
+    if (!premium) {
+      $$('#nameFont option').forEach((o) => { o.disabled = o.value !== 'default'; });
+      $('#entryText').disabled = true;
+      $('#entryNote').textContent = '(Premium)';
+    }
+
     // Önizleme penceresi
     const openPreview = () => { $('#previewModal').hidden = false; preview(); };
     const closePreview = () => { $('#previewModal').hidden = true; };
@@ -392,6 +434,7 @@
     };
 
     if (!user.username) return claim();
+    currentUsername = user.username;
 
     const pub = await api(`/api/profile/${encodeURIComponent(user.username)}`);
     editor(user, pub);

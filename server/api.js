@@ -1,16 +1,14 @@
 // JSON API. Tüm yetki kontrolleri sunucuda yapılır.
+const crypto = require('crypto');
 const express = require('express');
 const db = require('./db');
-const { put } = require('@vercel/blob');
+const { handleUpload } = require('@vercel/blob/client');
 const {
-  BADGES, MANUAL_BADGES, roleRank, effectiveRole, hasPremium, effectiveBadges, parseOwnerIds,
+  BADGES, MANUAL_BADGES, roleRank, effectiveRole, hasPremium, effectiveBadges, resolveBadges, isCustomKey, parseOwnerIds,
 } = require('./roles');
 const { sanitizeProfile, publicProfile, validUsername, USERNAME_RE } = require('./profile');
 
 const router = express.Router();
-const MB = 1024 * 1024;
-
-// Tanı: değerin kendisi değil, yalnızca sayısı döner.
 const OWNER_DIAG = parseOwnerIds(process.env.OWNER_IDS);
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
@@ -39,7 +37,7 @@ function loadTarget(req, res, next) {
   next();
 }
 
-// Rozet ve premium için kendi hesabına izin verilir (yetki kontrolü requireRank ile yapılır).
+// Rozet ve premium için kendi hesabına izin verilir.
 function loadTargetSelf(req, res, next) {
   if (req.params.id === req.user.id) {
     req.targetId = req.user.id;
@@ -56,7 +54,7 @@ const selfView = (u) => ({
   role: effectiveRole(u),
   premium: Boolean(u.premium),
   provider: u.provider,
-  badges: effectiveBadges(u),
+  badges: resolveBadges(effectiveBadges(u), db.read().badgeDefs || {}),
 });
 
 const adminView = (u) => ({
@@ -71,10 +69,10 @@ const adminView = (u) => ({
 router.get('/me', (req, res) => {
   res.json({
     user: req.user ? selfView(req.user) : null,
-    badges: BADGES,
+    builtinBadges: BADGES,
     manualBadges: MANUAL_BADGES,
     debug: {
-      build: 'v5',
+      build: 'v7',
       ownerEnvCount: OWNER_DIAG.length,
       youAreListed: req.user ? OWNER_DIAG.includes(req.user.id) : null,
     },
@@ -120,91 +118,106 @@ router.put('/profile', requireUser, requireClaimed, wrap(async (req, res) => {
   res.json({ ok: true, profile });
 }));
 
-// ---------- dosya yükleme ----------
-const IMG = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' };
-const VID = { 'video/mp4': 'mp4', 'video/webm': 'webm' };
-const AUD = {
-  'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/ogg': 'ogg', 'audio/wav': 'wav',
-  'audio/x-wav': 'wav', 'audio/wave': 'wav', 'audio/mp4': 'm4a', 'audio/aac': 'aac',
+// ---------- dosya yükleme (doğrudan Vercel Blob'a) ----------
+// Dosya sunucudan geçmez. Bu rota yalnızca yükleme izni (token) verir.
+// Böylece istek gövdesi sınırı devreye girmez ve boyut sınırı yoktur.
+const IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const VID_TYPES = ['video/mp4', 'video/webm'];
+const AUD_TYPES = [
+  'audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/mp4', 'audio/aac',
+];
+const CUR_TYPES = ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/gif'];
+const FONT_TYPES = [
+  'font/woff2', 'font/woff', 'font/ttf', 'font/otf',
+  'application/font-woff2', 'application/font-woff', 'application/x-font-ttf', 'application/x-font-otf',
+  'application/vnd.ms-opentype',
+];
+
+const UPLOAD_KINDS = {
+  avatar: { types: IMG_TYPES, premium: false },
+  background: { types: [...IMG_TYPES, ...VID_TYPES], videoOnlyPremium: true },
+  audio: { types: AUD_TYPES, premium: true },
+  click: { types: AUD_TYPES, premium: true },
+  cursor: { types: CUR_TYPES, premium: true },
+  font: { types: FONT_TYPES, premium: true },
 };
-const CUR = { 'image/x-icon': 'cur', 'image/vnd.microsoft.icon': 'cur', 'image/png': 'png', 'image/gif': 'gif' };
 
-const RULES = {
-  avatar: { types: IMG, limit: 2 * MB, premium: false },
-  audio: { types: AUD, limit: 8 * MB, premium: true },
-  cursor: { types: CUR, limit: 256 * 1024, premium: true },
-};
-
-router.post(
-  '/upload',
-  requireUser,
-  requireClaimed,
-  express.raw({ type: '*/*', limit: '15mb' }),
-  wrap(async (req, res) => {
-    const kind = String(req.query.kind || '');
-    const type = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
-    const body = req.body;
-    if (!Buffer.isBuffer(body) || !body.length) return res.status(400).json({ error: 'Dosya boş' });
-
-    const premium = hasPremium(req.user);
-    let ext;
-    let limit;
-
-    if (kind === 'background') {
-      if (IMG[type]) {
-        ext = IMG[type];
-        limit = 6 * MB;
-      } else if (VID[type]) {
-        if (!premium) return res.status(403).json({ error: 'Video arka plan Premium ile açılır' });
-        ext = VID[type];
-        limit = 15 * MB;
-      } else {
-        return res.status(400).json({ error: 'Desteklenmeyen dosya türü' });
-      }
-    } else if (RULES[kind]) {
-      const rule = RULES[kind];
-      ext = rule.types[type];
-      if (!ext) return res.status(400).json({ error: 'Desteklenmeyen dosya türü' });
-      if (rule.premium && !premium) return res.status(403).json({ error: 'Bu özellik Premium ile açılır' });
-      limit = rule.limit;
-    } else {
-      return res.status(400).json({ error: 'Geçersiz yükleme türü' });
-    }
-
-    if (body.length > limit) return res.status(413).json({ error: 'Dosya çok büyük' });
-
-    try {
-      const blob = await put(`${kind}/${req.user.username}.${ext}`, body, {
-        access: 'public',
-        contentType: type,
-        addRandomSuffix: true,
-      });
-      res.json({ url: blob.url });
-    } catch (err) {
-      console.error('[upload]', err.message);
-      res.status(503).json({ error: 'Yükleme şu an yapılamıyor. Vercel Blob bağlı mı kontrol et.' });
-    }
-  })
-);
+router.post('/blob/upload', requireUser, requireClaimed, express.json({ limit: '64kb' }), wrap(async (req, res) => {
+  const premium = hasPremium(req.user);
+  try {
+    const result = await handleUpload({
+      body: req.body,
+      request: req,
+      onBeforeGenerateToken: async (pathname) => {
+        const kind = pathname.split('/')[0];
+        const spec = UPLOAD_KINDS[kind];
+        if (!spec) throw new Error('Geçersiz yükleme türü');
+        if (!pathname.startsWith(`${kind}/${req.user.username}.`)) throw new Error('Geçersiz dosya yolu');
+        if (spec.premium && !premium) throw new Error('Bu özellik Premium ile açılır');
+        let allowed = spec.types;
+        if (spec.videoOnlyPremium && !premium) allowed = IMG_TYPES;
+        return {
+          allowedContentTypes: allowed,
+          addRandomSuffix: true,
+          tokenPayload: JSON.stringify({ uid: req.user.id, kind }),
+        };
+      },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || 'Yükleme izni verilemedi' });
+  }
+}));
 
 // ---------- admin paneli ----------
 router.get('/admin/users', requireUser, requireRank(60), (req, res) => {
   const q = String(req.query.q || '').trim().toLowerCase().slice(0, 60);
-  const all = Object.values(db.read().users);
+  const s = db.read();
+  const all = Object.values(s.users);
   const users = all
     .filter((u) => !q || [u.username, u.name, u.email, u.id].some((v) => (v || '').toLowerCase().includes(q)))
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, 100)
     .map(adminView);
-  res.json({ users, total: all.length });
+  res.json({ users, total: all.length, badgeDefs: Object.values(s.badgeDefs || {}) });
 });
+
+// Özel rozet tanımları
+router.post('/admin/badge-defs', requireUser, requireRank(80), wrap(async (req, res) => {
+  const label = clipText(req.body?.label, 24);
+  const icon = clipText(req.body?.icon, 3) || '★';
+  const color = /^#[0-9a-f]{6}$/i.test(req.body?.color || '') ? req.body.color.toLowerCase() : '#9d6bff';
+  if (!label) return res.status(400).json({ error: 'Rozet adı gerekli' });
+  const id = crypto.randomBytes(5).toString('hex');
+  await db.mutate((s) => {
+    s.badgeDefs = s.badgeDefs || {};
+    s.badgeDefs[id] = { id, label, icon, color };
+  });
+  res.json({ ok: true, badge: { id, label, icon, color } });
+}));
+
+router.delete('/admin/badge-defs/:id', requireUser, requireRank(80), wrap(async (req, res) => {
+  const id = req.params.id;
+  const key = `custom:${id}`;
+  await db.mutate((s) => {
+    delete (s.badgeDefs || {})[id];
+    for (const u of Object.values(s.users)) {
+      u.badges = (u.badges || []).filter((b) => b !== key);
+    }
+  });
+  res.json({ ok: true });
+}));
 
 router.post('/admin/users/:id/badge', requireUser, requireRank(80), loadTargetSelf, wrap(async (req, res) => {
   const badge = String(req.body?.badge || '');
-  if (!MANUAL_BADGES.includes(badge)) return res.status(400).json({ error: 'Geçersiz rozet' });
   const on = req.body.enabled === true;
-  await db.mutate((s) => {
-    const u = s.users[req.targetId];
+  const s = db.read();
+  const validCustom = isCustomKey(badge) && s.badgeDefs?.[badge.slice(7)];
+  if (!MANUAL_BADGES.includes(badge) && !validCustom) {
+    return res.status(400).json({ error: 'Geçersiz rozet' });
+  }
+  await db.mutate((st) => {
+    const u = st.users[req.targetId];
     u.badges = on ? [...new Set([...(u.badges || []), badge])] : (u.badges || []).filter((b) => b !== badge);
   });
   res.json({ ok: true });
@@ -229,5 +242,9 @@ const toggleField = (field) => wrap(async (req, res) => {
 
 router.post('/admin/users/:id/premium', requireUser, requireRank(80), loadTargetSelf, toggleField('premium'));
 router.post('/admin/users/:id/ban', requireUser, requireRank(80), loadTarget, toggleField('banned'));
+
+function clipText(v, max) {
+  return String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max);
+}
 
 module.exports = router;

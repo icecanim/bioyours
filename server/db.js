@@ -13,7 +13,7 @@ const MASTER_KEY = process.env.JSONBIN_MASTER_KEY;
 let binId = process.env.JSONBIN_BIN_ID;
 const IS_VERCEL = Boolean(process.env.VERCEL);
 
-const emptyDb = () => ({ users: {}, usernames: {}, createdAt: Date.now() });
+const emptyDb = () => ({ users: {}, usernames: {}, badgeDefs: {}, createdAt: Date.now() });
 const normalize = (record) => ({ ...emptyDb(), ...record });
 
 let state = emptyDb();

@@ -184,6 +184,52 @@
       </div>
     </section>
 
+    <!-- GİRİŞ, FONT VE SES -->
+    <section class="sec">
+      <div class="sec-head"><h2>Giriş, font ve ses</h2><span>Bazı alanlar Premium gerektirir</span></div>
+      <div class="grid-form three">
+        <div class="field">
+          <label for="entryText">Giriş butonu yazısı <b id="entryNote"></b></label>
+          <input id="entryText" type="text" data-k="entryText" maxlength="30" placeholder="Click to enter">
+        </div>
+        <div class="field">
+          <label for="nameFont">İsim fontu</label>
+          <select id="nameFont" data-k="nameFont">
+            <option value="default">Varsayılan</option>
+            <option value="inter">Inter</option>
+            <option value="space">Space Grotesk</option>
+            <option value="playfair">Playfair Display</option>
+            <option value="orbitron">Orbitron</option>
+            <option value="pixel">Pixel</option>
+            <option value="pacifico">Pacifico</option>
+            <option value="bebas">Bebas Neue</option>
+            <option value="custom">Yüklediğim özel font</option>
+          </select>
+        </div>
+      </div>
+      <div class="uploads two" style="margin-top:18px">
+        <div class="up">
+          <div class="up-title">Özel Font</div>
+          <div class="up-box">
+            <span id="fontTag" class="up-tag" hidden></span>
+            <button id="fontRemove" class="up-x" hidden aria-label="Kaldır">✕</button>
+            <div class="up-thumb"><div class="up-empty" id="fontName">Aa — .woff2, .ttf, .otf yükle</div></div>
+            <label class="up-hit" for="fontFile" aria-label="Font yükle"></label>
+          </div>
+          <input id="fontFile" type="file" accept=".woff2,.woff,.ttf,.otf" hidden>
+        </div>
+        <div class="up">
+          <div class="up-title">Tıklama Sesi</div>
+          <div class="up-box">
+            <button id="clickRemove" class="up-x" hidden aria-label="Kaldır">✕</button>
+            <div class="up-thumb"><div class="up-empty" id="clickName">♪ Her tıklamada çalacak ses</div></div>
+            <label class="up-hit" for="clickFile" aria-label="Tıklama sesi yükle"></label>
+          </div>
+          <input id="clickFile" type="file" accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/mp4,audio/aac" hidden>
+        </div>
+      </div>
+    </section>
+
     <!-- BAĞLANTILAR -->
     <section class="sec">
       <div class="sec-head"><h2>Bağlantılar</h2><span id="linkCount"></span></div>
@@ -239,6 +285,6 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="/js/render.js"></script>
-<script src="/js/dashboard.js"></script>
+<script type="module" src="/js/dashboard.js"></script>
 </body>
 </html>

@@ -489,3 +489,35 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
   .toggles { grid-template-columns: 1fr; }
   .fx-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ================= v7: giriş ekranı, font, ikon bağlantılar, rozetler ================= */
+.enter {
+  position: absolute; inset: 0; z-index: 20; display: grid; place-items: center;
+  background: rgba(0, 0, 0, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: fade .4s both;
+}
+.enter-btn {
+  height: 52px; padding: 0 30px; border-radius: 999px; cursor: pointer; font-size: 15px; font-weight: 700;
+  color: #fff; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .28);
+  letter-spacing: .02em; transition: transform .3s var(--ease), background .3s, border-color .3s;
+}
+.enter-btn:hover { transform: translateY(-2px); background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .5); }
+.icons { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.ico {
+  --pf: #9d6bff;
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--pf); color: #0a0b0d; font-weight: 800; font-size: 15px;
+  transition: transform .3s var(--ease), box-shadow .3s;
+  animation: rise .6s var(--ease) both; animation-delay: calc(var(--i) * 60ms + 150ms);
+}
+.ico:hover { transform: translateY(-3px) scale(1.08); box-shadow: 0 10px 22px -8px var(--pf); }
+.ico.mono { background: var(--icon); color: var(--bgc); }
+.name { font-family: var(--nfont, inherit); }
+.grid-form.three { grid-template-columns: repeat(3, 1fr); }
+.uploads.two { grid-template-columns: 1fr 1fr; }
+.defform { display: grid; grid-template-columns: 2fr 1fr 70px auto; gap: 10px; align-items: center; }
+.defform input[type=color] { height: 38px; padding: 3px; }
+.chip.danger { margin-left: 4px; }
+@media (max-width: 760px) {
+  .grid-form.three, .uploads.two, .defform { grid-template-columns: 1fr; }
+}
