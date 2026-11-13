@@ -4,7 +4,7 @@ const express = require('express');
 const db = require('./db');
 const { handleUpload } = require('@vercel/blob/client');
 const {
-  BADGES, MANUAL_BADGES, roleRank, effectiveRole, hasPremium, effectiveBadges, resolveBadges, isCustomKey, parseOwnerIds,
+  BADGES, MANUAL_BADGES, roleRank, effectiveRole, hasPremium, effectiveBadges, resolveBadges, isCustomKey, parseOwnerIds, EMBLEM_KEYS,
 } = require('./roles');
 const { sanitizeProfile, publicProfile, validUsername, USERNAME_RE } = require('./profile');
 
@@ -202,7 +202,7 @@ router.get('/admin/users', requireUser, requireRank(60), (req, res) => {
 // Özel rozet tanımları
 router.post('/admin/badge-defs', requireUser, requireRank(80), wrap(async (req, res) => {
   const label = clipText(req.body?.label, 24);
-  const icon = clipText(req.body?.icon, 3) || '★';
+  const icon = EMBLEM_KEYS.includes(req.body?.icon) ? req.body.icon : 'star';
   const color = /^#[0-9a-f]{6}$/i.test(req.body?.color || '') ? req.body.color.toLowerCase() : '#9d6bff';
   if (!label) return res.status(400).json({ error: 'Rozet adı gerekli' });
   const id = crypto.randomBytes(5).toString('hex');

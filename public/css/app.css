@@ -608,3 +608,24 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 0; bord
 }
 .fx-cursor.on { opacity: 1; }
 .stage.has-cursor.cursor-follow, .stage.has-cursor.cursor-follow * { cursor: none !important; }
+
+/* ================= v12: özel SVG amblemler ================= */
+.emb { display: inline-grid; place-items: center; }
+.emb svg {
+  width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round; overflow: visible;
+}
+.badge-g { display: inline-grid; place-items: center; color: var(--bc); }
+.badge-g .emb svg { filter: drop-shadow(0 0 4px var(--bc)); }
+.badge-ico:hover .badge-g .emb svg { filter: drop-shadow(0 0 7px var(--bc)); }
+.defform { grid-template-columns: 1fr 70px auto; }
+.emb-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(14, 1fr); gap: 8px; }
+.emb-opt {
+  height: 42px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--field); color: var(--muted);
+  display: grid; place-items: center; cursor: pointer; transition: all .3s var(--ease);
+}
+.emb-opt .emb svg { width: 19px; height: 19px; }
+.emb-opt:hover { color: var(--text); border-color: #3a3f4c; transform: translateY(-1px); }
+.emb-opt.on { color: var(--accent-2); border-color: rgba(157, 107, 255, .65); box-shadow: 0 0 0 3px rgba(157, 107, 255, .16); }
+@media (max-width: 900px) { .emb-grid { grid-template-columns: repeat(7, 1fr); } }
+@media (max-width: 560px) { .defform { grid-template-columns: 1fr; } }

@@ -2,17 +2,17 @@
 // Yetki sıralaması: owner > admin > mod > user
 
 const BADGES = {
-  owner:     { label: 'Owner',           icon: '♛', color: '#ff5a6b' },
-  admin:     { label: 'Admin',           icon: '◆', color: '#f5b84b' },
-  mod:       { label: 'Moderatör',       icon: '⚒', color: '#5ce1ff' },
-  premium:   { label: 'Premium',         icon: '◇', color: '#b98cff' },
-  verified:  { label: 'Doğrulanmış',     icon: '✓', color: '#49d17d' },
-  early:     { label: 'Erken Kullanıcı', icon: '✦', color: '#9fd8ff' },
-  supporter: { label: 'Destekçi',        icon: '♥', color: '#ff8fc7' },
-  partner:   { label: 'Partner',         icon: '◈', color: '#ffd84d' },
-  developer: { label: 'Geliştirici',     icon: '⌘', color: '#7ee7c1' },
-  beta:      { label: 'Beta Tester',     icon: '✧', color: '#a0b4ff' },
-  bughunter: { label: 'Bug Avcısı',      icon: '⌖', color: '#ff9f6b' },
+  owner:     { label: 'Owner',           icon: 'crown', color: '#ff5a6b' },
+  admin:     { label: 'Admin',           icon: 'shield', color: '#f5b84b' },
+  mod:       { label: 'Moderatör',       icon: 'wrench', color: '#5ce1ff' },
+  premium:   { label: 'Premium',         icon: 'gem', color: '#b98cff' },
+  verified:  { label: 'Doğrulanmış',     icon: 'check', color: '#49d17d' },
+  early:     { label: 'Erken Kullanıcı', icon: 'sprout', color: '#9fd8ff' },
+  supporter: { label: 'Destekçi',        icon: 'heart', color: '#ff8fc7' },
+  partner:   { label: 'Partner',         icon: 'star', color: '#ffd84d' },
+  developer: { label: 'Geliştirici',     icon: 'code', color: '#7ee7c1' },
+  beta:      { label: 'Beta Tester',     icon: 'flask', color: '#a0b4ff' },
+  bughunter: { label: 'Bug Avcısı',      icon: 'bug', color: '#ff9f6b' },
 };
 
 const ROLE_RANK = { owner: 100, admin: 80, mod: 60, user: 0 };
@@ -64,7 +64,10 @@ function resolveBadges(keys, defs) {
   }).filter(Boolean);
 }
 
+// Özel rozetler için seçilebilir semboller (istemci aynı anahtarları çizer)
+const EMBLEM_KEYS = ['crown', 'shield', 'wrench', 'gem', 'check', 'spark', 'sprout', 'heart', 'star', 'code', 'flask', 'bug', 'bolt', 'eye'];
+
 module.exports = {
-  BADGES, MANUAL_BADGES, ROLE_RANK, roleRank, isCustomKey,
+  BADGES, MANUAL_BADGES, ROLE_RANK, roleRank, isCustomKey, EMBLEM_KEYS,
   effectiveRole, hasPremium, effectiveBadges, resolveBadges, parseOwnerIds,
 };

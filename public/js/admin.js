@@ -58,7 +58,7 @@
     const customs = defs.map((d) => {
       const key = `custom:${d.id}`;
       const has = (t.manualBadges || []).includes(key);
-      return `<button class="chip${has ? ' on' : ''}" ${dG} data-act="badge" data-badge="${key}" data-on="${!has}" style="--bc:${esc(d.color)}">${esc(d.icon)} ${esc(d.label)}</button>`;
+      return `<button class="chip${has ? ' on' : ''}" ${dG} data-act="badge" data-badge="${key}" data-on="${!has}" style="--bc:${esc(d.color)}">${BioRender.emblem(d.icon)} ${esc(d.label)}</button>`;
     }).join('');
 
     return `<tr data-id="${esc(t.id)}">
@@ -74,8 +74,24 @@
     </tr>`;
   }
 
+  function buildPicker() {
+    const grid = $('#embPick');
+    grid.innerHTML = BioRender.EMBLEM_KEYS
+      .map((k) => `<button type="button" class="emb-opt" data-emb="${k}" aria-label="${k}">${BioRender.emblem(k)}</button>`)
+      .join('');
+    const choose = (k) => {
+      $('#defIcon').value = k;
+      grid.querySelectorAll('.emb-opt').forEach((b) => b.classList.toggle('on', b.dataset.emb === k));
+    };
+    grid.onclick = (e) => {
+      const b = e.target.closest('[data-emb]');
+      if (b) choose(b.dataset.emb);
+    };
+    choose('star');
+  }
+
   function renderDefs() {
-    $('#defList').innerHTML = defs.map((d) => `<span class="chip on" style="--bc:${esc(d.color)}">${esc(d.icon)} ${esc(d.label)}
+    $('#defList').innerHTML = defs.map((d) => `<span class="chip on" style="--bc:${esc(d.color)}">${BioRender.emblem(d.icon)} ${esc(d.label)}
       <button class="chip danger" data-del="${esc(d.id)}" style="margin-left:6px">Sil</button></span>`).join('')
       || '<span class="muted small">Henüz özel rozet yok.</span>';
   }
@@ -126,6 +142,7 @@
     me = (await api('/api/me')).user;
     if (!me || myRank() < 60) return (location.href = '/');
     $('#meRole').textContent = me.role;
+    buildPicker();
 
     let timer;
     $('#q').addEventListener('input', () => {
@@ -139,7 +156,7 @@
       try {
         await api('/api/admin/badge-defs', 'POST', {
           label: $('#defLabel').value.trim(),
-          icon: $('#defIcon').value.trim() || '★',
+          icon: $('#defIcon').value,
           color: $('#defColor').value,
         });
         $('#defLabel').value = '';

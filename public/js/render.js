@@ -68,8 +68,28 @@
   }
 
   // Rozet nesnesi: { label, icon, color } (sunucu üretir)
+  // Özel amblemler: 24x24 çizgi ikonlar. Anahtarlar roles.js ile aynıdır.
+  const EMBLEM_PATHS = {
+    crown: '<path d="M3 8l4.5 4L12 6l4.5 6L21 8l-2 10H5L3 8z"/><path d="M5 18.5h14"/>',
+    shield: '<path d="M12 3l7 3v5c0 4.6-3 8.2-7 10-4-1.8-7-5.4-7-10V6l7-3z"/><path d="M12 9l2 3-2 3-2-3 2-3z"/>',
+    wrench: '<path d="M15 4a5 5 0 0 0-4.6 6.8L4.6 17.6a2 2 0 0 0 2.8 2.8l6.8-5.8A5 5 0 0 0 20 9l-2.6 2.6-3.1-.1-.1-3.1L17 6a5 5 0 0 0-2-2z"/>',
+    gem: '<path d="M7 4h10l4 5-9 11L3 9z"/><path d="M3 9h18M9.5 4 12 9l2.5-5M12 9v11"/>',
+    check: '<circle cx="12" cy="12" r="8.5"/><path d="M8 12.4l2.7 2.7L16 9.6"/>',
+    spark: '<circle cx="12" cy="12" r="2.6"/><path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21M5.6 5.6l2.5 2.5M15.9 15.9l2.5 2.5M5.6 18.4l2.5-2.5M15.9 8.1l2.5-2.5"/>',
+    sprout: '<path d="M12 21v-9"/><path d="M12 12c0-4-3-6.5-7.5-6.5 0 4.2 3 6.5 7.5 6.5z"/><path d="M12 14.5c0-3.2 2.4-5.4 6.5-5.4 0 3.3-2.4 5.4-6.5 5.4z"/>',
+    heart: '<path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/>',
+    star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 17l-5.3 2.6 1-5.8-4.2-4.1 5.9-.9z"/>',
+    code: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+    flask: '<path d="M9.5 3h5M10.5 3v6L5.6 17.6A2 2 0 0 0 7.3 20.5h9.4a2 2 0 0 0 1.7-2.9L13.5 9V3"/><path d="M8 15h8"/>',
+    bug: '<rect x="8" y="8" width="8" height="10" rx="4"/><path d="M12 8V5M8 12H4M20 12h-4M8 16l-3 2M16 16l3 2M9.5 5.5 8 4M14.5 5.5 16 4"/>',
+    bolt: '<path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z"/>',
+    eye: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  };
+  const EMBLEM_KEYS = Object.keys(EMBLEM_PATHS);
+  const emblem = (key) => `<span class="emb" aria-hidden="true"><svg viewBox="0 0 24 24">${EMBLEM_PATHS[key] || EMBLEM_PATHS.star}</svg></span>`;
+
   const badgeHtml = (b) => (b
-    ? `<span class="badge-ico" style="--bc:${esc(b.color)}" tabindex="0" aria-label="${esc(b.label)}"><span class="badge-g">${esc(b.icon || '')}</span><span class="badge-tip">${esc(b.label)}</span></span>`
+    ? `<span class="badge-ico" style="--bc:${esc(b.color)}" tabindex="0" aria-label="${esc(b.label)}"><span class="badge-g">${emblem(b.icon)}</span><span class="badge-tip">${esc(b.label)}</span></span>`
     : '');
 
   function bgMedia(bg, bgEffect, preview) {
@@ -406,5 +426,5 @@
     }
   }
 
-  window.BioRender = { render, badgeHtml, esc };
+  window.BioRender = { render, badgeHtml, esc, emblem, EMBLEM_KEYS };
 })();
