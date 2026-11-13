@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const express = require('express');
 const db = require('./db');
 const { defaultProfile } = require('./profile');
+const { parseOwnerIds } = require('./roles');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const BASE = (process.env.BASE_URL || `http://localhost:${process.env.PORT || 30
 const SECURE = BASE.startsWith('https://');
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
-const OWNER_IDS = (process.env.OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const OWNER_IDS = parseOwnerIds(process.env.OWNER_IDS);
 
 if (!process.env.SESSION_SECRET) {
   console.warn('[auth] SESSION_SECRET yok. Geçici bir anahtar kullanılıyor, yeniden başlatınca oturumlar düşer.');

@@ -28,4 +28,15 @@ function effectiveBadges(u) {
   return [...set].filter((b) => BADGES[b]);
 }
 
-module.exports = { BADGES, MANUAL_BADGES, ROLE_RANK, roleRank, effectiveBadges };
+
+// OWNER_IDS ayrıştırıcı. "discord:123" da, sadece "123" da kabul eder (Discord varsayılır).
+// Tırnak ve boşlukları temizler.
+function parseOwnerIds(raw) {
+  return String(raw || '')
+    .split(',')
+    .map((s) => s.trim().replace(/^["']+|["']+$/g, '').trim())
+    .filter(Boolean)
+    .map((s) => (s.includes(':') ? s : `discord:${s}`));
+}
+
+module.exports = { BADGES, MANUAL_BADGES, ROLE_RANK, roleRank, effectiveBadges, parseOwnerIds };

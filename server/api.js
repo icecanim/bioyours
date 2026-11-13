@@ -2,13 +2,13 @@
 const express = require('express');
 const db = require('./db');
 const { put } = require('@vercel/blob');
-const { BADGES, MANUAL_BADGES, roleRank, effectiveBadges } = require('./roles');
+const { BADGES, MANUAL_BADGES, roleRank, effectiveBadges, parseOwnerIds } = require('./roles');
 const { sanitizeProfile, publicProfile, validUsername, USERNAME_RE } = require('./profile');
 
 const router = express.Router();
 
 // Tanı amaçlı: değerin kendisi değil, yalnızca sayısı ve eşleşme bilgisi döner.
-const OWNER_IDS = (process.env.OWNER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const OWNER_IDS = parseOwnerIds(process.env.OWNER_IDS);
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -63,6 +63,7 @@ router.get('/me', (req, res) => {
     debug: {
       build: 'v3-diag',
       ownerEnvCount: OWNER_IDS.length,
+      ownerEnvLength: (process.env.OWNER_IDS || '').length,
       youAreListed: req.user ? OWNER_IDS.includes(req.user.id) : null,
     },
   });
