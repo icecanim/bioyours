@@ -1,7 +1,7 @@
 // Profil doğrulama, varsayılanlar ve dışarıya açık görünüm.
 // Kullanıcıdan gelen her alan burada temizlenir. Tarayıcıya güvenilmez.
 const crypto = require('crypto');
-const { effectiveBadges } = require('./roles');
+const { effectiveBadges, hasPremium } = require('./roles');
 
 const RESERVED = new Set([
   'api', 'auth', 'dashboard', 'yonetim', 'admin', 'login', 'logout', 'settings',
@@ -19,23 +19,12 @@ function validUsername(name) {
   return null;
 }
 
-// Bağlantı URL'sine göre platform tanıma. Renk, etiket baş harfi için kullanılır.
 const PLATFORMS = {
-  youtube: ['youtube.com', 'youtu.be'],
-  x: ['x.com', 'twitter.com'],
-  instagram: ['instagram.com'],
-  tiktok: ['tiktok.com'],
-  discord: ['discord.gg', 'discord.com'],
-  twitch: ['twitch.tv'],
-  kick: ['kick.com'],
-  github: ['github.com'],
-  spotify: ['spotify.com'],
-  soundcloud: ['soundcloud.com'],
-  steam: ['steamcommunity.com', 'steampowered.com'],
-  telegram: ['t.me', 'telegram.me'],
-  reddit: ['reddit.com'],
-  snapchat: ['snapchat.com'],
-  linkedin: ['linkedin.com'],
+  youtube: ['youtube.com', 'youtu.be'], x: ['x.com', 'twitter.com'], instagram: ['instagram.com'],
+  tiktok: ['tiktok.com'], discord: ['discord.gg', 'discord.com'], twitch: ['twitch.tv'],
+  kick: ['kick.com'], github: ['github.com'], spotify: ['spotify.com'], soundcloud: ['soundcloud.com'],
+  steam: ['steamcommunity.com', 'steampowered.com'], telegram: ['t.me', 'telegram.me'],
+  reddit: ['reddit.com'], snapchat: ['snapchat.com'], linkedin: ['linkedin.com'],
   facebook: ['facebook.com', 'fb.com'],
 };
 
@@ -52,14 +41,38 @@ function detectPlatform(url) {
   return 'web';
 }
 
+// Efekt listeleri. Premium gerektirenler PREMIUM_* ile işaretli.
+const BG_EFFECTS = ['none', 'aurora', 'snow', 'rain', 'blur', 'night', 'tv'];
+const NAME_EFFECTS = [
+  'none', 'rainbow', 'typewriter', 'glitch', 'scramble',
+  'sparkle-white', 'sparkle-blue', 'sparkle-red', 'sparkle-yellow',
+];
+const PREMIUM_NAME_EFFECTS = [
+  'typewriter', 'glitch', 'scramble', 'sparkle-white', 'sparkle-blue', 'sparkle-red', 'sparkle-yellow',
+];
+const WIDGETS = ['off', 'discord'];
+
 function defaultProfile() {
   return {
     displayName: '',
     description: '',
+    location: '',
     avatar: '',
-    background: { type: 'color', color: '#05070a', color2: '#1b4a63', angle: 135, url: '' },
-    colors: { accent: '#7fd6ff', text: '#f2f7fa', card: '#0f161d' },
+    useDiscordAvatar: false,
+    avatarRing: false,
+    background: { type: 'color', color: '#0b0c0f', color2: '#2a1d4d', angle: 135, url: '' },
+    bgEffect: 'none',
+    nameEffect: 'none',
+    widget: 'off',
     effects: { blur: 12, opacity: 0.85 },
+    glow: { name: false, socials: false, badges: false },
+    colors: { accent: '#9d6bff', text: '#f2f2f5', card: '#16181e', icon: '#ffffff' },
+    monochromeIcons: false,
+    animatedTitle: false,
+    boxColors: false,
+    soundControl: false,
+    audio: '',
+    cursor: '',
     links: [],
   };
 }
@@ -70,6 +83,8 @@ const num = (v, min, max, fallback) => {
   const n = Number(v);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 };
+const pick = (v, list, fallback) => (list.includes(v) ? v : fallback);
+const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 
 function safeUrl(v, protocols = ['https:']) {
   if (typeof v !== 'string' || v.length > 500) return '';
@@ -81,30 +96,33 @@ function safeUrl(v, protocols = ['https:']) {
   }
 }
 
-// Premium olmayan kullanıcılar 10 bağlantı ve video arka plan kullanabilir.
 function sanitizeProfile(input, user) {
-  const p = input && typeof input === 'object' ? input : {};
-  const premium = Boolean(user.premium);
-  const bg = p.background && typeof p.background === 'object' ? p.background : {};
-  const colors = p.colors && typeof p.colors === 'object' ? p.colors : {};
-  const fx = p.effects && typeof p.effects === 'object' ? p.effects : {};
+  const p = obj(input);
+  const bg = obj(p.background);
+  const c = obj(p.colors);
+  const fx = obj(p.effects);
+  const glow = obj(p.glow);
+  const premium = hasPremium(user);
   const linkLimit = premium ? 50 : 10;
 
-  let bgType = ['color', 'gradient', 'image', 'video'].includes(bg.type) ? bg.type : 'color';
+  let bgType = pick(bg.type, ['color', 'gradient', 'image', 'video'], 'color');
   if (bgType === 'video' && !premium) bgType = 'color';
+
+  let nameEffect = pick(p.nameEffect, NAME_EFFECTS, 'none');
+  if (!premium && PREMIUM_NAME_EFFECTS.includes(nameEffect)) nameEffect = 'none';
 
   const links = (Array.isArray(p.links) ? p.links : [])
     .slice(0, linkLimit)
     .map((l) => {
-      if (!l || typeof l !== 'object') return null;
-      const url = safeUrl(l.url, ['http:', 'https:']);
+      const item = obj(l);
+      const url = safeUrl(item.url, ['http:', 'https:']);
       if (!url) return null;
       return {
-        id: clip(l.id, 40) || crypto.randomUUID(),
-        title: clip(l.title, 40) || 'Bağlantı',
+        id: clip(item.id, 40) || crypto.randomUUID(),
+        title: clip(item.title, 40) || 'Bağlantı',
         url,
         platform: detectPlatform(url),
-        enabled: l.enabled !== false,
+        enabled: item.enabled !== false,
       };
     })
     .filter(Boolean);
@@ -112,45 +130,63 @@ function sanitizeProfile(input, user) {
   return {
     displayName: clip(p.displayName, 32),
     description: clip(p.description, 190),
+    location: clip(p.location, 40),
     avatar: safeUrl(p.avatar, ['https:']),
+    useDiscordAvatar: p.useDiscordAvatar === true,
+    avatarRing: p.avatarRing === true,
     background: {
       type: bgType,
-      color: hex(bg.color, '#05070a'),
-      color2: hex(bg.color2, '#1b4a63'),
+      color: hex(bg.color, '#0b0c0f'),
+      color2: hex(bg.color2, '#2a1d4d'),
       angle: num(bg.angle, 0, 360, 135),
       url: bgType === 'image' || bgType === 'video' ? safeUrl(bg.url, ['https:']) : '',
     },
-    colors: {
-      accent: hex(colors.accent, '#7fd6ff'),
-      text: hex(colors.text, '#f2f7fa'),
-      card: hex(colors.card, '#0f161d'),
-    },
+    bgEffect: pick(p.bgEffect, BG_EFFECTS, 'none'),
+    nameEffect,
+    widget: pick(p.widget, WIDGETS, 'off'),
     effects: {
-      blur: num(fx.blur, 0, 40, 12),
+      blur: num(fx.blur, 0, 80, 12),
       opacity: num(fx.opacity, 0.2, 1, 0.85),
     },
+    glow: {
+      name: glow.name === true,
+      socials: glow.socials === true,
+      badges: glow.badges === true,
+    },
+    colors: {
+      accent: hex(c.accent, '#9d6bff'),
+      text: hex(c.text, '#f2f2f5'),
+      card: hex(c.card, '#16181e'),
+      icon: hex(c.icon, '#ffffff'),
+    },
+    monochromeIcons: p.monochromeIcons === true,
+    animatedTitle: p.animatedTitle === true,
+    boxColors: p.boxColors === true,
+    soundControl: p.soundControl === true,
+    audio: premium ? safeUrl(p.audio, ['https:']) : '',
+    cursor: premium ? safeUrl(p.cursor, ['https:']) : '',
     links,
   };
 }
 
 // Herkese açık görünüm. E-posta ve sağlayıcı bilgisi asla dışarı çıkmaz.
+// Discord ID'si yalnızca Discord widget'ı açıksa gösterilir.
 function publicProfile(u) {
-  const p = u.profile || defaultProfile();
+  const p = { ...defaultProfile(), ...(u.profile || {}) };
+  const discord = u.provider === 'discord';
+  const useDiscordAvatar = p.useDiscordAvatar === true && discord && Boolean(u.avatar);
   return {
     username: u.username,
-    avatar: p.avatar || u.avatar || '',
+    avatar: useDiscordAvatar ? u.avatar : (p.avatar || u.avatar || ''),
     badges: effectiveBadges(u),
-    premium: Boolean(u.premium),
+    premium: hasPremium(u),
+    discordId: discord && p.widget === 'discord' ? u.id.split(':')[1] : '',
     profile: { ...p, displayName: p.displayName || u.username },
   };
 }
 
 module.exports = {
-  RESERVED,
-  USERNAME_RE,
-  validUsername,
-  detectPlatform,
-  defaultProfile,
-  sanitizeProfile,
-  publicProfile,
+  RESERVED, USERNAME_RE, validUsername, detectPlatform,
+  BG_EFFECTS, NAME_EFFECTS, PREMIUM_NAME_EFFECTS,
+  defaultProfile, sanitizeProfile, publicProfile,
 };

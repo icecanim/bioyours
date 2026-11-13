@@ -11,7 +11,10 @@
   let me = null;
   const myRank = () => RANK[me.role] ?? 0;
   // Yalnızca admin ve üstü, kendinden düşük yetkili birini yönetebilir
-  const canManage = (t) => myRank() >= 80 && myRank() > (RANK[t.role] ?? 0) && t.id !== me.id;
+  // Rozet ve premium: admin ve üstü, kendi hesabı dahil (üst yetkili hedef dahil değil)
+  const canGrant = (t) => myRank() >= 80 && (t.id === me.id || myRank() > (RANK[t.role] ?? 0));
+  // Ban: kendi hesabı hariç, daha düşük yetkili hedef
+  const canBan = (t) => myRank() >= 80 && t.id !== me.id && myRank() > (RANK[t.role] ?? 0);
 
   const toast = (msg, bad = false) => {
     const t = $('#toast');
@@ -35,12 +38,12 @@
   }
 
   function row(t) {
-    const ok = canManage(t);
-    const dis = ok ? '' : 'disabled';
+    const dG = canGrant(t) ? '' : 'disabled';
+    const dB = canBan(t) ? '' : 'disabled';
 
     const grants = Object.entries(GRANTS).map(([key, label]) => {
       const has = (t.manualBadges || []).includes(key);
-      return `<button class="chip${has ? ' on' : ''}" ${dis} data-act="badge" data-badge="${key}" data-on="${!has}">${label}</button>`;
+      return `<button class="chip${has ? ' on' : ''}" ${dG} data-act="badge" data-badge="${key}" data-on="${!has}">${label}</button>`;
     }).join('');
 
     const role = me.role === 'owner' && t.role !== 'owner'
@@ -56,8 +59,8 @@
         : '<span class="muted">—</span>'}<div class="muted small">${esc(t.provider)}</div></td>
       <td>${role}</td>
       <td><div class="chips">${grants}</div></td>
-      <td><button class="chip${t.premium ? ' on' : ''}" ${dis} data-act="premium" data-on="${!t.premium}">${t.premium ? 'Premium ✓' : 'Premium ver'}</button></td>
-      <td><button class="chip${t.banned ? ' danger' : ''}" ${dis} data-act="ban" data-on="${!t.banned}">${t.banned ? 'Banı kaldır' : 'Banla'}</button></td>
+      <td><button class="chip${t.premium ? ' on' : ''}" ${dG} data-act="premium" data-on="${!t.premium}">${t.premium ? 'Premium ✓' : 'Premium ver'}</button></td>
+      <td><button class="chip${t.banned ? ' danger' : ''}" ${dB} data-act="ban" data-on="${!t.banned}">${t.banned ? 'Banı kaldır' : 'Banla'}</button></td>
     </tr>`;
   }
 

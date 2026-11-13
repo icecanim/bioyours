@@ -1,15 +1,17 @@
-// Panel mantığı: profil, avatar ve arka plan yüklemeleri, bağlantılar, önizleme, kayıt.
+// Panel mantığı: yüklemeler, efektler, anahtarlar, bağlantılar, önizleme ve kayıt.
 (() => {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
   const { render, badgeHtml, esc } = window.BioRender;
-  const MB = 1024 * 1024;
 
-  const THEMES = {
-    steel:  { accent: '#7fd6ff', text: '#f2f7fa', card: '#0f161d' },
-    ember:  { accent: '#ff8a5b', text: '#fff4ee', card: '#1a0c12' },
-    violet: { accent: '#b48cff', text: '#f5f0ff', card: '#120a22' },
-    mint:   { accent: '#7ee7c1', text: '#effff9', card: '#08201e' },
+  const MB = 1024 * 1024;
+  const LIMITS = { avatar: 2 * MB, bgImage: 6 * MB, bgVideo: 15 * MB, audio: 8 * MB, cursor: 256 * 1024 };
+  const NFX_PREMIUM = ['typewriter', 'glitch', 'scramble', 'sparkle-white', 'sparkle-blue', 'sparkle-red', 'sparkle-yellow'];
+
+  const MIME = {
+    cur: 'image/x-icon', ico: 'image/x-icon', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    webp: 'image/webp', gif: 'image/gif', mp4: 'video/mp4', webm: 'video/webm',
+    mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac',
   };
 
   const toast = (msg, bad = false) => {
@@ -33,11 +35,17 @@
     return data;
   }
 
-  // Dosyayı ham gövde olarak gönderir. Sunucu içerik türüne bakar.
+  // Dosya türü: tarayıcı boş bırakabilir (.cur, .m4a gibi), uzantıdan tahmin edilir
+  function mimeFor(file) {
+    if (file.type) return file.type;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    return MIME[ext] || '';
+  }
+
   async function uploadFile(kind, file) {
     const res = await fetch(`/api/upload?kind=${kind}`, {
       method: 'POST',
-      headers: { 'Content-Type': file.type },
+      headers: { 'Content-Type': mimeFor(file) },
       body: file,
       credentials: 'same-origin',
     });
@@ -52,6 +60,11 @@
     const last = keys.pop();
     keys.reduce((a, k) => a[k], o)[last] = value;
   };
+  const extOf = (url) => {
+    const m = (url || '').split('?')[0].split('.').pop() || '';
+    return m.length <= 4 ? m.toUpperCase() : '';
+  };
+  const humanLimit = (n) => (n < MB ? `${Math.round(n / 1024)} KB` : `${Math.round(n / MB)} MB`);
 
   function claim() {
     const want = (sessionStorage.getItem('bio_want') || '').replace(/[^a-z0-9_.]/g, '').slice(0, 20);
@@ -72,15 +85,20 @@
   }
 
   function editor(user, pub) {
+    const premium = Boolean(user.premium) || ['owner', 'admin'].includes(user.role);
+    const LINK_LIMIT = premium ? 50 : 10;
+    const discordId = user.provider === 'discord' ? user.id.split(':')[1] : '';
     const draft = structuredClone(pub.profile);
-    const LIMIT = user.premium ? 50 : 10;
     let savedSnap = JSON.stringify(draft);
 
+    const avatarNow = () => (draft.useDiscordAvatar ? user.avatar : (draft.avatar || user.avatar));
     const preview = () => render($('#preview'), {
       username: user.username,
-      avatar: draft.avatar || user.avatar,
+      avatar: avatarNow(),
       badges: pub.badges,
+      discordId,
       profile: draft,
+      preview: true,
     });
 
     function touch() {
@@ -89,38 +107,73 @@
       $('#dirty').hidden = JSON.stringify(draft) === savedSnap;
     }
 
+    function setThumb(node, url, kind) {
+      if (!url) {
+        node.innerHTML = kind === 'audio' ? '' : '<div class="up-empty">Yüklemek için tıkla</div>';
+        return;
+      }
+      if (kind === 'video') node.innerHTML = `<video src="${esc(url)}" muted loop autoplay playsinline></video>`;
+      else node.innerHTML = `<img src="${esc(url)}" alt="">`;
+    }
+
+    function setTag(node, url) {
+      node.textContent = extOf(url);
+      node.hidden = !url;
+    }
+
     function sync() {
-      const t = draft.background.type;
-      const av = draft.avatar || user.avatar;
-      const img = draft.background.url;
-
-      $$('[data-bgtype]').forEach((b) => b.classList.toggle('on', b.dataset.bgtype === t));
-      $$('[data-bgpane]').forEach((p) => (p.hidden = p.dataset.bgpane !== t));
-
-      $('#avatarImg').hidden = !av;
-      if (av) $('#avatarImg').src = av;
-      $('#avatarInit').hidden = !!av;
-      $('#avatarInit').textContent = (draft.displayName || user.username || '?').charAt(0).toUpperCase();
-
-      $('#imgCurrent').hidden = !(t === 'image' && img);
-      $('#imgPrev').src = t === 'image' && img ? img : '';
-      $('#vidCurrent').hidden = !(t === 'video' && img);
-      $('#videoLock').hidden = !!user.premium;
-      $('#vidDrop').hidden = !user.premium;
-
-      $('#angleVal').textContent = `${draft.background.angle}°`;
-      $('#blurVal').textContent = `${draft.effects.blur}px`;
-      $('#opVal').textContent = `${Math.round(draft.effects.opacity * 100)}%`;
-      $('#descCount').textContent = `${draft.description.length}/190`;
-    }
-
-    function pushAll() {
+      // Form alanları (aktif alan hariç, imleç zıplamasın)
       $$('[data-k]').forEach((el) => {
-        el.value = get(draft, el.dataset.k) ?? '';
+        if (document.activeElement !== el) el.value = get(draft, el.dataset.k) ?? '';
       });
+
+      $$('[data-toggle]').forEach((b) => b.setAttribute('aria-checked', String(draft[b.dataset.toggle] === true)));
+      $$('[data-glow]').forEach((b) => b.classList.toggle('on', draft.glow[b.dataset.glow] === true));
+      $$('[data-nfx]').forEach((b) => {
+        b.classList.toggle('on', draft.nameEffect === b.dataset.nfx);
+        b.classList.toggle('locked', !premium && NFX_PREMIUM.includes(b.dataset.nfx));
+      });
+
+      const grad = draft.background.type === 'gradient';
+      $('#gradBtn').classList.toggle('active', grad);
+      $('#gradBtn').textContent = grad ? 'Profil gradyanını kapat' : 'Profil gradyanını aç';
+      $('#gradRow').hidden = !grad;
+      $('#angleVal').textContent = `${draft.background.angle}°`;
+
+      const op = Math.round(draft.effects.opacity * 100);
+      $('#opacity').value = op;
+      $('#opacity').style.setProperty('--fill', `${((op - 20) / 80) * 100}%`);
+      $('#opVal').textContent = `${op}%`;
+      $('#blur').value = draft.effects.blur;
+      $('#blur').style.setProperty('--fill', `${(draft.effects.blur / 80) * 100}%`);
+      $('#blurVal').textContent = `${draft.effects.blur}px`;
+      $('#descCount').textContent = `${draft.description.length}/190`;
+      $('#linkCount').textContent = `${draft.links.length}/${LINK_LIMIT}`;
+      $('#addLink').disabled = draft.links.length >= LINK_LIMIT;
+      $('#liveUrl').textContent = `bio.yours/${user.username}`;
+
+      // Yükleyiciler
+      const bgIsMedia = draft.background.type === 'image' || draft.background.type === 'video';
+      const bgUrl = bgIsMedia ? draft.background.url : '';
+      setThumb($('#bgThumb'), bgUrl, draft.background.type);
+      setTag($('#bgTag'), bgUrl);
+      $('#bgRemove').hidden = !bgUrl;
+
+      $('#auName').textContent = draft.audio ? '♪ Ses yüklü' : '♪ Ses yüklemek için tıkla';
+      $('#audioRemove').hidden = !draft.audio;
+
+      setThumb($('#avThumb'), draft.avatar, 'image');
+      setTag($('#avTag'), draft.avatar);
+      $('#avRemove').hidden = !draft.avatar;
+
+      setThumb($('#cuThumb'), draft.cursor, 'image');
+      setTag($('#cuTag'), draft.cursor);
+      $('#cursorRemove').hidden = !draft.cursor;
+
+      $('#premiumStrip').hidden = premium;
     }
 
-    // Metin, renk ve kaydırıcılar
+    // ---- metin, renk, seçim kutuları (data-k) ----
     $$('[data-k]').forEach((el) => {
       el.addEventListener('input', () => {
         put(draft, el.dataset.k, el.type === 'range' ? Number(el.value) : el.value);
@@ -128,106 +181,119 @@
       });
     });
 
-    // Arka plan türü
-    $$('[data-bgtype]').forEach((b) => {
+    $('#opacity').addEventListener('input', (e) => {
+      draft.effects.opacity = Number(e.target.value) / 100;
+      touch();
+    });
+    $('#blur').addEventListener('input', (e) => {
+      draft.effects.blur = Number(e.target.value);
+      touch();
+    });
+
+    // ---- anahtarlar ----
+    $$('[data-toggle]').forEach((b) => {
       b.onclick = () => {
-        const t = b.dataset.bgtype;
-        if (t === 'video' && !user.premium) return toast('Video arka plan Premium ile açılır', true);
-        draft.background.type = t;
+        const k = b.dataset.toggle;
+        draft[k] = draft[k] !== true;
         touch();
       };
     });
-
-    // Gradyan hazır setleri
-    $$('.preset').forEach((p) => {
-      p.onclick = () => {
-        const [c1, c2] = p.dataset.preset.split(',');
-        Object.assign(draft.background, { type: 'gradient', color: c1, color2: c2 });
-        pushAll();
-        touch();
-      };
-    });
-
-    // Tema seçimi: renkleri değiştirir, arka planı değil
-    $$('.theme').forEach((b) => {
+    $$('[data-glow]').forEach((b) => {
       b.onclick = () => {
-        Object.assign(draft.colors, THEMES[b.dataset.theme]);
-        pushAll();
+        const k = b.dataset.glow;
+        draft.glow[k] = draft.glow[k] !== true;
         touch();
       };
     });
 
-    // Avatar yükleme
-    $('#avatarFile').onchange = async (e) => {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file) return;
-      if (file.size > 2 * MB) return toast('Avatar en fazla 2 MB olabilir', true);
-      try {
-        toast('Fotoğraf yükleniyor…');
-        draft.avatar = await uploadFile('avatar', file);
+    // ---- kullanıcı adı efektleri ----
+    $$('[data-nfx]').forEach((b) => {
+      b.onclick = () => {
+        const v = b.dataset.nfx;
+        if (!premium && NFX_PREMIUM.includes(v)) return toast('Bu efekt Premium ile açılır', true);
+        draft.nameEffect = v;
         touch();
-        toast('Fotoğraf yüklendi. Kaydetmeyi unutma.');
-      } catch (err) {
-        toast(err.message, true);
-      }
-    };
-    $('#avatarReset').onclick = () => {
-      draft.avatar = '';
+      };
+    });
+
+    // ---- profil gradyanı ----
+    $('#gradBtn').onclick = () => {
+      const grad = draft.background.type === 'gradient';
+      draft.background.type = grad ? 'color' : 'gradient';
+      if (!grad) draft.background.url = '';
       touch();
     };
 
-    // Arka plan görseli
-    $('#bgFile').onchange = async (e) => {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file) return;
-      if (file.size > 6 * MB) return toast('Görsel en fazla 6 MB olabilir', true);
+    // ---- dosya yükleyiciler ----
+    async function guarded(file, limit, kind, apply, okText) {
+      if (file.size > limit) return toast(`Dosya çok büyük. En fazla ${humanLimit(limit)}`, true);
       try {
-        toast('Görsel yükleniyor…');
-        draft.background.url = await uploadFile('background', file);
-        draft.background.type = 'image';
+        toast('Yükleniyor…');
+        apply(await uploadFile(kind, file));
         touch();
-        toast('Görsel yüklendi. Kaydetmeyi unutma.');
+        toast(`${okText}. Kaydetmeyi unutma.`);
       } catch (err) {
         toast(err.message, true);
       }
+    }
+
+    const pick = (id) => $(id).files[0];
+    const reset = (id) => { $(id).value = ''; };
+
+    $('#bgFile').onchange = () => {
+      const f = pick('#bgFile');
+      reset('#bgFile');
+      if (!f) return;
+      const isVideo = (f.type || '').startsWith('video/') || /\.(mp4|webm)$/i.test(f.name);
+      if (isVideo && !premium) return toast('Video arka plan Premium ile açılır', true);
+      guarded(f, isVideo ? LIMITS.bgVideo : LIMITS.bgImage, 'background', (url) => {
+        draft.background.url = url;
+        draft.background.type = isVideo ? 'video' : 'image';
+      }, 'Arka plan yüklendi');
     };
-    $('#imgRemove').onclick = () => {
+
+    $('#audioFile').onchange = () => {
+      const f = pick('#audioFile');
+      reset('#audioFile');
+      if (!f) return;
+      if (!premium) return toast('Ses yükleme Premium ile açılır', true);
+      guarded(f, LIMITS.audio, 'audio', (url) => { draft.audio = url; }, 'Ses yüklendi');
+    };
+
+    $('#avatarFile').onchange = () => {
+      const f = pick('#avatarFile');
+      reset('#avatarFile');
+      if (!f) return;
+      guarded(f, LIMITS.avatar, 'avatar', (url) => {
+        draft.avatar = url;
+        draft.useDiscordAvatar = false;
+      }, 'Fotoğraf yüklendi');
+    };
+
+    $('#cursorFile').onchange = () => {
+      const f = pick('#cursorFile');
+      reset('#cursorFile');
+      if (!f) return;
+      if (!premium) return toast('Özel imleç Premium ile açılır', true);
+      guarded(f, LIMITS.cursor, 'cursor', (url) => { draft.cursor = url; }, 'İmleç yüklendi');
+    };
+
+    $('#bgRemove').onclick = () => {
       draft.background.url = '';
       draft.background.type = 'color';
       touch();
     };
+    $('#audioRemove').onclick = () => { draft.audio = ''; touch(); };
+    $('#avRemove').onclick = () => { draft.avatar = ''; touch(); };
+    $('#cursorRemove').onclick = () => { draft.cursor = ''; touch(); };
 
-    // Premium video arka plan
-    $('#vidFile').onchange = async (e) => {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file) return;
-      if (file.size > 15 * MB) return toast('Video en fazla 15 MB olabilir', true);
-      try {
-        toast('Video yükleniyor, biraz sürebilir…');
-        draft.background.url = await uploadFile('background', file);
-        draft.background.type = 'video';
-        touch();
-        toast('Video yüklendi. Kaydetmeyi unutma.');
-      } catch (err) {
-        toast(err.message, true);
-      }
-    };
-    $('#vidRemove').onclick = () => {
-      draft.background.url = '';
-      draft.background.type = 'color';
-      touch();
-    };
-
-    // Bağlantılar
+    // ---- bağlantılar ----
     const renderLinks = () => {
       $('#linkList').innerHTML = draft.links.map((l, i) => `
         <div class="link-row${l.enabled === false ? ' off' : ''}" data-i="${i}">
           <div class="lr-main">
-            <input data-f="title" maxlength="40" placeholder="Başlık" value="${esc(l.title)}" aria-label="Bağlantı başlığı">
-            <input data-f="url" placeholder="https://..." value="${esc(l.url)}" aria-label="Bağlantı adresi">
+            <input type="text" data-f="title" maxlength="40" placeholder="Başlık" value="${esc(l.title)}" aria-label="Bağlantı başlığı">
+            <input type="text" data-f="url" placeholder="https://..." value="${esc(l.url)}" aria-label="Bağlantı adresi">
           </div>
           <div class="lr-actions">
             <button class="chip" data-act="toggle">${l.enabled === false ? 'Gizli' : 'Açık'}</button>
@@ -236,8 +302,6 @@
             <button class="chip danger" data-act="del" aria-label="Sil">✕</button>
           </div>
         </div>`).join('') || '<p class="muted small">Henüz bağlantın yok. "Bağlantı ekle" ile başla.</p>';
-      $('#linkCount').textContent = `${draft.links.length}/${LIMIT}`;
-      $('#addLink').disabled = draft.links.length >= LIMIT;
     };
 
     $('#linkList').addEventListener('input', (e) => {
@@ -263,22 +327,14 @@
     });
 
     $('#addLink').onclick = () => {
-      if (draft.links.length >= LIMIT) return toast(`Bu pakette en fazla ${LIMIT} bağlantı var`, true);
+      if (draft.links.length >= LINK_LIMIT) return toast(`Bu pakette en fazla ${LINK_LIMIT} bağlantı var`, true);
       draft.links.push({ id: '', title: 'Yeni bağlantı', url: 'https://', platform: 'web', enabled: true });
       renderLinks();
       touch();
       $$('#linkList .link-row:last-child input[data-f=url]')[0]?.focus();
     };
 
-    // Sekmeler
-    $$('.tabs button').forEach((btn) => {
-      btn.onclick = () => {
-        $$('.tabs button').forEach((b) => b.classList.toggle('on', b === btn));
-        $$('.pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === btn.dataset.tab));
-      };
-    });
-
-    // Kaydet
+    // ---- kaydet ----
     $('#save').onclick = async () => {
       const bad = draft.links.find((l) => !/^https?:\/\//i.test(l.url));
       if (bad) return toast(`"${bad.title}" bağlantısı http:// veya https:// ile başlamalı`, true);
@@ -289,7 +345,6 @@
         const { profile: saved } = await api('/api/profile', 'PUT', draft);
         Object.assign(draft, saved);
         savedSnap = JSON.stringify(draft);
-        pushAll();
         renderLinks();
         touch();
         toast('Kaydedildi ✓');
@@ -301,7 +356,6 @@
       }
     };
 
-    // Kaydetmeden çıkmayı engelle
     window.addEventListener('beforeunload', (e) => {
       if (JSON.stringify(draft) !== savedSnap) {
         e.preventDefault();
@@ -309,9 +363,7 @@
       }
     });
 
-    $('#liveUrl').textContent = `bio.yours/${user.username}`;
     $('#viewLink').href = `/${user.username}`;
-    pushAll();
     renderLinks();
     touch();
   }
@@ -333,7 +385,6 @@
     if (!user.username) return claim();
 
     const pub = await api(`/api/profile/${encodeURIComponent(user.username)}`);
-    if (!user.premium) $('#premiumLock').hidden = false;
     editor(user, pub);
   }
 
