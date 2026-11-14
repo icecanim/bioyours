@@ -690,3 +690,26 @@ img.li-thumb { display: block; }
 .badge-ico:hover .badge-tip, .badge-ico:focus-visible .badge-tip {
   opacity: 1; transform: translate(-50%, 0) scale(1); transition-delay: 0s;
 }
+
+/* ================= v16: yuvarlak yok, sadece amblem ================= */
+.badge-ico {
+  width: auto; height: auto; padding: 4px; border-radius: 0;
+  background: none; border: 0; box-shadow: none;
+  color: color-mix(in srgb, var(--bc) 80%, #ffffff);
+  transition: transform .45s cubic-bezier(.2, .8, .2, 1);
+}
+.badge-ico:hover, .badge-ico:focus-visible {
+  transform: translateY(-3px) scale(1.12); border: 0; box-shadow: none; background: none;
+}
+.glow-badge .badge-ico { box-shadow: none; }
+.badge-g { transition: transform .45s cubic-bezier(.2, .8, .2, 1), filter .45s ease; }
+.badge-g .emb svg {
+  width: 21px; height: 21px; stroke-width: 1.45;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--bc) 45%, transparent));
+  transition: filter .45s ease;
+}
+.badge-ico:hover .badge-g, .badge-ico:focus-visible .badge-g { transform: none; }
+.badge-ico:hover .badge-g .emb svg, .badge-ico:focus-visible .badge-g .emb svg {
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--bc) 75%, transparent));
+}
+.badges { gap: 16px; }
