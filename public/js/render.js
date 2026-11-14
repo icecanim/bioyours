@@ -136,6 +136,23 @@
     ? `<img src="${esc(l.icon)}" alt="" draggable="false">`
     : esc(label.charAt(0)));
 
+  const fmt = (n) => Number(n).toLocaleString('tr-TR');
+
+  // Sayaç 0'dan hedefe yumuşakça sayar
+  function countUp(node, to) {
+    const start = performance.now();
+    const dur = 900;
+    let raf = 0;
+    const tick = (t) => {
+      const k = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - k, 3);
+      node.textContent = fmt(Math.round(to * eased));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    cleanup.push(() => cancelAnimationFrame(raf));
+  }
+
   function render(el, data) {
     stopFx();
     const p = data.profile || {};
@@ -216,6 +233,9 @@
           <div class="links">${cardsHtml}</div>
           ${iconsHtml}
         </div>
+        ${data.views !== undefined && p.showViews !== false
+          ? `<div class="views" aria-label="Görüntülenme sayısı"><span class="views-ico">${emblem('eye')}</span><span class="views-n">${fmt(data.views)}</span></div>`
+          : ''}
         <p class="foot-mini">bio.yours</p>
         ${soundBtn}
         ${audio}
@@ -254,6 +274,9 @@
       };
       img.src = p.cursor;
     }
+
+    const vn = el.querySelector('.views-n');
+    if (vn && !data.preview) countUp(vn, data.views);
 
     const w = el.querySelector('[data-widget]');
     if (w) loadWidget(w, w.dataset.id);

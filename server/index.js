@@ -8,6 +8,7 @@ const { router: authRouter, loadUser } = require('./auth');
 const apiRouter = require('./api');
 const { roleRank } = require('./roles');
 const { RESERVED, USERNAME_RE, publicProfile } = require('./profile');
+const { countView } = require('./views');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const VIEWS_DIR = path.join(__dirname, '..', 'views');
@@ -123,6 +124,7 @@ app.get('/:username', (req, res, next) => {
     return res.type('html').send(view('available.html').replace(/<!--NAME-->/g, () => esc(name)));
   }
   if (user.banned) return res.status(404).type('html').send(NOT_FOUND);
+  countView(name);
   const data = publicProfile(user);
   res.type('html').send(view('profile.html').replace('<!--META-->', () => profileHead(data)));
 });

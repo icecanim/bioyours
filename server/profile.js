@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const db = require('./db');
 const { effectiveBadges, resolveBadges, hasPremium } = require('./roles');
+const { viewsOf } = require('./views');
 
 const RESERVED = new Set([
   'api', 'auth', 'dashboard', 'yonetim', 'admin', 'login', 'logout', 'settings',
@@ -81,6 +82,7 @@ function defaultProfile() {
     audio: '',
     clickSound: '',
     cursor: '',
+    showViews: true,
     links: [],
   };
 }
@@ -190,6 +192,7 @@ function sanitizeProfile(input, user) {
     audio: premium ? safeUrl(p.audio) : '',
     clickSound: premium ? safeUrl(p.clickSound) : '',
     cursor: premium ? safeUrl(p.cursor) : '',
+    showViews: p.showViews !== false,
     links,
   };
 }
@@ -205,6 +208,7 @@ function publicProfile(u) {
     avatar: useDiscordAvatar ? u.avatar : (p.avatar || u.avatar || ''),
     badges: resolveBadges(effectiveBadges(u), db.read().badgeDefs || {}),
     premium: hasPremium(u),
+    views: viewsOf(u),
     discordId: discord && p.widget === 'discord' ? u.id.split(':')[1] : '',
     profile: { ...p, displayName: p.displayName || u.username },
   };
