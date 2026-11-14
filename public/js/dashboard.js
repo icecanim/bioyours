@@ -176,6 +176,13 @@ let currentUsername = '';
       $('#fontRemove').hidden = !draft.customFont;
       $('#clickName').textContent = draft.clickSound ? '♪ Tıklama sesi yüklü' : '♪ Her tıklamada çalacak ses';
       $('#clickRemove').hidden = !draft.clickSound;
+      $('#frameToggle').setAttribute('aria-checked', String(draft.frame.enabled === true));
+      $('#frOpacity').value = Math.round(draft.frame.opacity * 100);
+      $('#frOpacity').style.setProperty('--fill', `${Math.round(draft.frame.opacity * 100)}%`);
+      $('#frOpacityVal').textContent = `${Math.round(draft.frame.opacity * 100)}%`;
+      $('#frBlur').value = draft.frame.blur;
+      $('#frBlur').style.setProperty('--fill', `${(draft.frame.blur / 60) * 100}%`);
+      $('#frBlurVal').textContent = `${draft.frame.blur}px`;
       $('#premiumStrip').hidden = premium;
     }
 
@@ -193,6 +200,20 @@ let currentUsername = '';
     });
     $('#blur').addEventListener('input', (e) => {
       draft.effects.blur = Number(e.target.value);
+      touch();
+    });
+
+    // ---- profil çerçevesi ----
+    $('#frameToggle').onclick = () => {
+      draft.frame.enabled = draft.frame.enabled !== true;
+      touch();
+    };
+    $('#frOpacity').addEventListener('input', (e) => {
+      draft.frame.opacity = Number(e.target.value) / 100;
+      touch();
+    });
+    $('#frBlur').addEventListener('input', (e) => {
+      draft.frame.blur = Number(e.target.value);
       touch();
     });
 

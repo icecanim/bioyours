@@ -70,6 +70,7 @@ function defaultProfile() {
     customFont: '',
     widget: 'off',
     effects: { blur: 12, opacity: 0.85 },
+    frame: { enabled: false, color: '#000000', opacity: 0.35, blur: 14 },
     glow: { name: false, socials: false, badges: false },
     colors: { accent: '#9d6bff', text: '#f2f2f5', card: '#16181e', icon: '#ffffff' },
     monochromeIcons: false,
@@ -163,6 +164,12 @@ function sanitizeProfile(input, user) {
     effects: {
       blur: num(fx.blur, 0, 80, 12),
       opacity: num(fx.opacity, 0.2, 1, 0.85),
+    },
+    frame: {
+      enabled: obj(p.frame).enabled === true,
+      color: hex(obj(p.frame).color, '#000000'),
+      opacity: num(obj(p.frame).opacity, 0, 1, 0.35),
+      blur: num(obj(p.frame).blur, 0, 60, 14),
     },
     glow: {
       name: glow.name === true,

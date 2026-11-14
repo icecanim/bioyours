@@ -143,6 +143,8 @@
     const c = p.colors || {};
     const fx = p.effects || {};
     const glow = p.glow || {};
+    const fr = p.frame || {};
+    const frameStyle = `--fr:${hex(fr.color, '#000000')};--fo:${num(fr.opacity, 0.35)};--fb:${num(fr.blur, 14)}px`;
     const name = p.displayName || data.username || '';
     const usable = (p.links || []).filter((l) => l.enabled !== false && /^https?:\/\//i.test(l.url || ''));
     const cards = usable.filter((l) => l.display !== 'icon');
@@ -203,7 +205,7 @@
     el.innerHTML = `
       <div class="stage${p.cursor ? ' has-cursor' : ''}" style="${style}">
         <div class="bg-layer">${bgMedia(bg, p.bgEffect, data.preview)}${fxLayer(p.bgEffect)}</div>
-        <div class="profile">
+        <div class="profile${fr.enabled === true ? ' framed' : ''}" style="${fr.enabled === true ? frameStyle : ''}">
           <div class="avatar${p.avatarRing ? ' ring' : ''}">${avatarInner}</div>
           ${nameHtml(name, p, glow)}
           <p class="handle">@${esc(data.username)}</p>
@@ -231,6 +233,8 @@
 
     const name = el.querySelector('.name');
     if (name) startNameFx(name, p.nameEffect, data.name);
+    // Premium daktilo: sekme başlığında da yazılır
+    if (!data.preview && p.nameEffect === 'typewriter' && data.premium) titleTypewriter(data.name);
 
     // Özel imleç: görsel olarak imlecin yerine çizilir (CORS ve .cur desteğinden bağımsız)
     if (p.cursor && !data.preview) {
@@ -321,6 +325,23 @@
   }
 
   const POOL = '!<>-_\\/[]{}=+*^?#ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+  // Sekme başlığında daktilo: sayfa açıkken başlığı yazar, kapanınca eski başlığı geri koyar
+  function titleTypewriter(text) {
+    const prev = document.title;
+    const chars = [...text];
+    let i = 0;
+    let dir = 1;
+    let hold = 0;
+    const id = setInterval(() => {
+      if (hold > 0) { hold -= 1; return; }
+      i += dir;
+      if (i >= chars.length) { i = chars.length; dir = -1; hold = 24; }
+      else if (i <= 0) { i = 0; dir = 1; hold = 10; }
+      document.title = `${chars.slice(0, i).join('')}|`;
+    }, 110);
+    cleanup.push(() => { clearInterval(id); document.title = prev; });
+  }
 
   // İsim efektleri. Rainbow ve glitch CSS ile çalışır, diğerleri burada.
   function startNameFx(node, kind, text) {
